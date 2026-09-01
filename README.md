@@ -87,8 +87,8 @@ committed file.
 
 ## Database
 
-The Prisma models live in a dedicated `uftech_ai` PostgreSQL schema, so the
-connection string can point at a database that hosts other schemas as well.
+The Prisma models are created in the default `public` schema, so
+`DATABASE_URL` should point at a database dedicated to this site.
 
 Apply the schema to a new database:
 
@@ -96,7 +96,7 @@ Apply the schema to a new database:
 npx prisma migrate deploy
 ```
 
-If the target database already contains the `uftech_ai` tables, record the
+If the target database already contains these tables, record the
 baseline as applied instead — `migrate deploy` will otherwise fail trying to
 create tables that exist:
 
