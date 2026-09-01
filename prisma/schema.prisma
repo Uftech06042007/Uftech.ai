@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  schemas  = ["marketing"]
+  schemas  = ["uftech_ai"]
 }
 
 // A first-time site visitor who accepted cookies. Created the moment they
@@ -29,7 +29,7 @@ model Visitor {
   convertedAt DateTime?
   leads       Lead[]
 
-  @@schema("marketing")
+  @@schema("uftech_ai")
 }
 
 // A contact form submission. Linked back to a Visitor when the submitting
@@ -45,5 +45,5 @@ model Lead {
   visitorId String?
   visitor   Visitor? @relation(fields: [visitorId], references: [visitorId])
 
-  @@schema("marketing")
+  @@schema("uftech_ai")
 }

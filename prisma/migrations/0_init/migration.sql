@@ -1,8 +1,8 @@
 -- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "marketing";
+CREATE SCHEMA IF NOT EXISTS "uftech_ai";
 
 -- CreateTable
-CREATE TABLE "marketing"."Visitor" (
+CREATE TABLE "uftech_ai"."Visitor" (
     "id" TEXT NOT NULL,
     "visitorId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -21,7 +21,7 @@ CREATE TABLE "marketing"."Visitor" (
 );
 
 -- CreateTable
-CREATE TABLE "marketing"."Lead" (
+CREATE TABLE "uftech_ai"."Lead" (
     "id" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "name" TEXT NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE "marketing"."Lead" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Visitor_visitorId_key" ON "marketing"."Visitor"("visitorId");
+CREATE UNIQUE INDEX "Visitor_visitorId_key" ON "uftech_ai"."Visitor"("visitorId");
 
 -- AddForeignKey
-ALTER TABLE "marketing"."Lead" ADD CONSTRAINT "Lead_visitorId_fkey" FOREIGN KEY ("visitorId") REFERENCES "marketing"."Visitor"("visitorId") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "uftech_ai"."Lead" ADD CONSTRAINT "Lead_visitorId_fkey" FOREIGN KEY ("visitorId") REFERENCES "uftech_ai"."Visitor"("visitorId") ON DELETE SET NULL ON UPDATE CASCADE;

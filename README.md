@@ -18,59 +18,55 @@ React 19, TypeScript.
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in the values you need — see below
+cp .env.example .env.local
 npm run dev
 ```
 
 Open http://localhost:3000.
 
-The site, contact form and lead storage all work with `.env.local` empty —
-`NEXT_PUBLIC_SITE_URL` falls back to `http://localhost:3000`, and a missing
-`RESEND_API_KEY` or `DATABASE_URL` just degrades that one feature gracefully
-(see the per-variable notes in `.env.example`). Only the chatbot needs real
-values (`ANTHROPIC_API_KEY` at minimum) to do anything.
+Most of the site runs with `.env.local` left empty: `NEXT_PUBLIC_SITE_URL`
+falls back to `http://localhost:3000`, and a missing `RESEND_API_KEY` or
+`DATABASE_URL` degrades that one feature rather than breaking the page. The
+site assistant needs `ANTHROPIC_API_KEY` to respond at all.
+
+## Scripts
+
+| Command             | Purpose                                        |
+| ------------------- | ---------------------------------------------- |
+| `npm run dev`       | Development server                             |
+| `npm run build`     | Production build (runs `prisma generate` first) |
+| `npm start`         | Serve a production build                       |
+| `npm run lint`      | ESLint                                         |
+| `npm run typecheck` | TypeScript, no emit                            |
+| `npm test`          | Vitest, single run                             |
+| `npm run test:watch`| Vitest, watch mode                             |
+
+`lint` and `typecheck` are suitable as CI gates ahead of `build`.
+
+The Prisma client is generated into `generated/prisma`, which is not committed —
+it is rebuilt on install and on every build.
 
 ## Environment variables
 
-`.env.example` is the authoritative list, with defaults and notes inline.
-Local development uses a single `.env.local` file (gitignored, never
-committed) — see [Next.js's env docs](https://nextjs.org/docs/app/building-your-application/configuring/environment-variables)
-if you're curious about the fuller `.env`/`.env.local`/`.env.<NODE_ENV>` load
-order Next.js supports; this project doesn't use the others. Summary by area:
+`.env.example` lists every variable with its default. Local development uses a
+single `.env.local`, which is gitignored and should never be committed.
 
-| Area                | Variables                                                                                                                             |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Site                | `NEXT_PUBLIC_SITE_URL`                                                                                                                  |
-| Lead delivery       | `RESEND_API_KEY`, `CONTACT_FROM_EMAIL`, `CONTACT_TO_EMAIL`                                                                              |
-| Chatbot             | `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`, `AI_MODEL`, `AI_MODEL_FAST`                                                                  |
-| Rate limiting       | `CHAT_RATE_LIMIT_ENABLED`, `CHAT_RATE_LIMIT_MAX`, `CHAT_RATE_LIMIT_WINDOW_MS`, `CHAT_CONVERTED_RATE_LIMIT_ENABLED`, `CHAT_CONVERTED_RATE_LIMIT_BURST_MAX`, `CHAT_CONVERTED_RATE_LIMIT_BURST_WINDOW_MS`, `CHAT_CONVERTED_RATE_LIMIT_MAX`, `CHAT_CONVERTED_RATE_LIMIT_WINDOW_MS` |
-| Database            | `DATABASE_URL`                                                                                                                          |
+| Area          | Variables                                                            |
+| ------------- | -------------------------------------------------------------------- |
+| Site          | `NEXT_PUBLIC_SITE_URL`                                               |
+| Lead delivery | `RESEND_API_KEY`, `CONTACT_FROM_EMAIL`, `CONTACT_TO_EMAIL`           |
+| Assistant     | `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`, `AI_MODEL`, `AI_MODEL_FAST` |
+| Rate limiting | `CHAT_RATE_LIMIT_*`, `CHAT_CONVERTED_RATE_LIMIT_*`                   |
+| Database      | `DATABASE_URL`                                                       |
 
-`NEXT_PUBLIC_SITE_URL`, `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `ANTHROPIC_API_KEY`
-and `DATABASE_URL` are checked at server startup (`instrumentation.ts` →
-`lib/env.ts`) whenever `NODE_ENV=production` — if any is missing, the server
-refuses to start rather than come up half-broken. Outside production, a
-missing variable only logs a warning, since local dev intentionally runs with
-partial config (see the "works with `.env.local` empty" note above).
+`NEXT_PUBLIC_SITE_URL`, `RESEND_API_KEY`, `CONTACT_TO_EMAIL`,
+`ANTHROPIC_API_KEY` and `DATABASE_URL` are required when `NODE_ENV=production`;
+the server will not start without them. Outside production a missing variable
+only logs a warning.
 
-### Before deploying to production
-
-Set these in the hosting platform's environment configuration (not in a
-committed file):
-
-- `NEXT_PUBLIC_SITE_URL` — the real domain, not `localhost`.
-- `RESEND_API_KEY` and `CONTACT_FROM_EMAIL` — a live key and a sender on a
-  domain verified in Resend; the sandbox fallback won't deliver to real inboxes.
-- `CONTACT_TO_EMAIL` — the team inbox, not a personal address used for testing.
-- `ANTHROPIC_API_KEY` (and `ANTHROPIC_BASE_URL`/`AI_MODEL` if not using
-  Anthropic directly) — required for the chatbot to respond at all.
-- `DATABASE_URL` — the production Postgres instance.
-- Rate limiting (`CHAT_RATE_LIMIT_*`, `CHAT_CONVERTED_RATE_LIMIT_*`) is **on
-  by default once `NODE_ENV=production`** (set automatically by `next
-  build`/`next start` — never set it yourself). Defaults: 30 req/min general
-  limit for everyone; for visitors who already have a lead on file, an
-  additional 3 req/min burst cap and 10 req/hour sustained cap on top of that.
-  Only add these vars if those numbers don't fit.
+Rate limiting is enabled by default in production and disabled in development.
+The defaults are sensible for a marketing site; the `*_ENABLED`, `*_MAX` and
+`*_WINDOW_MS` variables exist to override them per environment.
 
 ### Values to set for a production deployment
 
@@ -91,7 +87,7 @@ committed file.
 
 ## Database
 
-The Prisma models live in a dedicated `marketing` PostgreSQL schema, so the
+The Prisma models live in a dedicated `uftech_ai` PostgreSQL schema, so the
 connection string can point at a database that hosts other schemas as well.
 
 Apply the schema to a new database:
@@ -100,7 +96,7 @@ Apply the schema to a new database:
 npx prisma migrate deploy
 ```
 
-If the target database already contains the `marketing` tables, record the
+If the target database already contains the `uftech_ai` tables, record the
 baseline as applied instead — `migrate deploy` will otherwise fail trying to
 create tables that exist:
 
@@ -119,125 +115,55 @@ npm run build
 npm start
 ```
 
-Set the production environment variables above however your platform expects
-(exported in the shell, a process manager's env config, etc.) — `.env`/`.env.local`
-are for local development only and are not meant to hold production secrets.
+Provide the production environment variables however the platform expects them.
+`.env` and `.env.local` are for local development and are not intended to hold
+production secrets.
 
-`npm run typecheck` and `npm run lint` are available to run as separate CI gates before `build`.
+## Deploying to Vercel
 
-`npm run build` runs `prisma generate` first, so a clean checkout builds without
-a separate generate step. The generated client lives in `generated/prisma` and
-is deliberately **not** committed — it is rebuilt on every install and build.
+**Project settings.** Framework preset **Next.js**; the default build command
+and output settings are correct. Node.js 20.x or later.
 
-## Database schema
+**Environment variables.** Add each variable above under
+**Project → Settings → Environment Variables** for the Production environment,
+and for Preview if preview deployments should work. Two things to know:
 
-The Prisma models live in their own `marketing` Postgres schema, so the
-connection string may point at a database shared with other applications —
-nothing outside that schema is created or touched.
-
-`prisma/migrations/0_init` is the baseline migration. Apply it to a fresh
-database with:
-
-```bash
-npx prisma migrate deploy
-```
-
-If the target database **already has** the `marketing` tables (they were
-created with `prisma db push` before migrations existed), don't run the
-migration — mark it as already applied instead, or `migrate deploy` will fail
-trying to create tables that exist:
-
-```bash
-npx prisma migrate resolve --applied 0_init
-```
-
-Migrations are **not** run automatically during the build. The database is
-shared, so schema changes are a deliberate, human-run step against a known
-connection string rather than something a deploy does on its way past.
-
-## Deploying on Vercel
-
-### 1. The repository
-
-Vercel deploys from a Git repository it can read. If the source of truth is a
-private repo and the deployment is driven from a separate public mirror, push
-this codebase to that public repo and connect Vercel to it. Before you do,
-confirm the mirror is safe to publish:
-
-- No `.env` or `.env.local` in the tree or in the history — both are gitignored,
-  and `git log --all --diff-filter=A --name-only | grep -i '\.env'` should show
-  nothing but `.env.example`.
-- Every secret lives in Vercel's environment configuration, never in a
-  committed file.
-
-Bear in mind that a public mirror publishes the full commit history, not just
-the current files, and that anything published there is effectively permanent.
-
-### 2. Project settings
-
-Framework preset **Next.js**; the default build command (`npm run build`) and
-output settings are correct as-is. Node.js 20.x or later (`package.json`
-`engines` already requires it).
-
-### 3. Environment variables
-
-Set every variable from ["Before deploying to production"](#before-deploying-to-production)
-in **Project → Settings → Environment Variables**, for the Production
-environment (and Preview, if preview deployments should work). Note that:
-
-- `NEXT_PUBLIC_SITE_URL` is **read at build time**, not at request time. It is
-  inlined into the client bundle *and* baked into the prerendered
-  `robots.txt`, `sitemap.xml` and Open Graph tags. Setting it after a build has
-  no effect — those files keep whatever host the build saw. Set it first, then
-  redeploy; restarting is not enough.
-- `NODE_ENV` is set by Vercel — never set it yourself.
-- A missing required variable makes `instrumentation.ts` throw on startup. Note
-  that the **build still succeeds** — the failure shows up at runtime, as every
-  request returning a 500. That is intended (better wholly down than quietly
-  half-broken), but it does mean a green deployment is not proof the
-  environment is complete. Load the site before calling a deploy done.
+- `NEXT_PUBLIC_SITE_URL` is read at build time. It is inlined into the client
+  bundle and baked into the prerendered `robots.txt`, `sitemap.xml` and Open
+  Graph tags, so changing it requires a new build, not a restart.
+- `NODE_ENV` is set by Vercel and should not be set manually.
+- A missing required variable does not fail the build; it surfaces at runtime.
+  Load the deployed site before considering a deploy finished.
 
 For preview deployments, point `DATABASE_URL` at a non-production database if
-you don't want preview traffic writing real leads.
+preview traffic should not write real records.
 
-### 4. Region
+**Region.** The API routes query PostgreSQL on most requests, so choose the
+function region closest to the database under **Project → Settings → Functions**.
 
-Functions default to Vercel's `iad1` (US East). The API routes talk to Postgres
-on nearly every request, so the region that matters is the one closest to the
-**database**, not to the visitor. If the database is not in US East, set the
-function region to match it in **Project → Settings → Functions**.
+**Custom domain.** Add the domain under **Project → Settings → Domains**. Vercel
+displays the exact DNS records to create; use those values, as they change over
+time. At the registrar or DNS host this is typically an `A` record on the apex
+and a `CNAME` on `www`. Remove any default parking or forwarding records for
+those names first, as they will conflict. Leave `MX` records untouched if the
+domain also carries email. Certificates are issued automatically once the
+records resolve.
 
-### 5. Custom domain (DNS at BigRock)
+**After the first deploy.** Check that:
 
-Add the domain in **Project → Settings → Domains**. Vercel then shows the exact
-records to create — use those values rather than any written down here, as they
-change. In BigRock's DNS management for the domain, expect to add:
+- the site loads (a 500 on every page indicates a missing required variable —
+  the name appears in the function logs);
+- `/robots.txt` and `/sitemap.xml` show the real domain rather than `localhost`;
+- a contact form submission is delivered by email and stored;
+- the assistant replies to a message.
 
-- an **A record** on the apex (`@`) pointing at the address Vercel shows, and
-- a **CNAME** on `www` pointing at the target Vercel shows.
+## Project structure
 
-Delete BigRock's default parking/forwarding records for `@` and `www` first, or
-they will conflict. DNS changes can take a few hours to propagate; Vercel issues
-the TLS certificate automatically once it can see the records.
-
-If the domain also carries email (MX records), leave those untouched — only the
-`@` A record and the `www` CNAME change.
-
-### 6. After the first deploy
-
-- The site loads at all (a 500 on every page means a required environment
-  variable is missing — check the function logs for the name).
-- `https://<domain>/robots.txt` and `/sitemap.xml` should show the real domain,
-  not `localhost` — if they don't, `NEXT_PUBLIC_SITE_URL` was missing or wrong
-  *at build time*, and a redeploy is needed after fixing it.
-- Submit the contact form once and confirm the lead both arrives by email and
-  lands in the `marketing.Lead` table.
-- Send the chatbot a message and confirm it replies.
-
-### Known limitation on serverless
-
-`lib/rate-limit.ts` keeps its sliding windows in memory, so on Vercel each
-function instance limits independently and the effective ceiling is higher than
-the configured numbers suggest. It is a courtesy guard against a single visitor
-hammering the chat, not a defence against a distributed one. Moving it to a
-shared store (Vercel KV / Redis) is the fix if that ever matters.
+```
+app/                  routes, API handlers, global styles
+components/           UI, grouped by page and by shared use
+lib/                  data, assistant prompt and client, lead handling, helpers
+prisma/               schema and migrations
+public/               images and video
+tests/                Vitest suites
+```
