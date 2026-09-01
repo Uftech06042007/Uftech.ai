@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["marketing"]
+}
+
+// A first-time site visitor who accepted cookies. Created the moment they
+// click Accept on the cookie banner, before they've identified themselves.
+model Visitor {
+  id          String    @id @default(cuid())
+  // Generated client-side on accept and stored in the uft_visitor_id cookie —
+  // this is what later ties a contact form submission back to this row.
+  visitorId   String    @unique
+  createdAt   DateTime  @default(now())
+  referrer    String?
+  landingPage String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmTerm     String?
+  utmContent  String?
+  userAgent   String?
+  ipAddress   String?
+  // Set once this visitor submits the contact form and becomes a named lead.
+  convertedAt DateTime?
+  leads       Lead[]
+
+  @@schema("marketing")
+}
+
+// A contact form submission. Linked back to a Visitor when the submitting
+// browser still carries the uft_visitor_id cookie set on cookie-accept.
+model Lead {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  name      String
+  email     String
+  company   String?
+  topic     String
+  message   String
+  visitorId String?
+  visitor   Visitor? @relation(fields: [visitorId], references: [visitorId])
+
+  @@schema("marketing")
+}

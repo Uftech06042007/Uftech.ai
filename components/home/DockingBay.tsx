@@ -4,7 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PRODUCTS } from "@/lib/data";
 
-const EJECT_X = 168;
+// How far the cartridge slides clear of its port when ejected. The distance is
+// a layout constraint, not a component one — it depends on the room left in the
+// rail beside the cart — so it is defined per breakpoint on .dock-cart-slot in
+// globals.css and read from there. A fixed 168px overshot the narrower phone
+// rail, and the cart was sliced in half by dock-wrap's overflow clip.
+const EJECT_X = "var(--eject-x)";
 const SPRING = { type: "spring" as const, stiffness: 260, damping: 24 };
 
 function DockRail({
@@ -46,7 +51,7 @@ function DockRail({
         <div className="dock-cart-slot">
           <motion.div
             className={`dock-cart${inserted ? " inserted" : ""}`}
-            animate={{ x: inserted ? 0 : EJECT_X }}
+            animate={{ x: inserted ? "0%" : EJECT_X }}
             transition={SPRING}
             onClick={onToggle}
           >
@@ -83,7 +88,7 @@ function DockRail({
 }
 
 export default function DockingBay() {
-  const [inserted, setInserted] = useState<boolean[]>(() => PRODUCTS.map((p) => p.t === "AI HRMS"));
+  const [inserted, setInserted] = useState<boolean[]>(() => PRODUCTS.map((p) => p.t === "AI HRMS & Compliance"));
 
   const toggle = (i: number) => setInserted((prev) => prev.map((v, j) => (j === i ? !v : v)));
   const insertAll = () => setInserted(PRODUCTS.map(() => true));
@@ -101,12 +106,14 @@ export default function DockingBay() {
             <em> / {PRODUCTS.length}</em>
           </b>
         </div>
-        <button className="mono pp-reset" onClick={insertAll}>
-          Insert all
-        </button>
-        <button className="mono pp-reset" onClick={ejectAll}>
-          Eject all
-        </button>
+        <div className="pp-actions">
+          <button className="btn sm accent" onClick={insertAll}>
+            Insert all
+          </button>
+          <button className="btn sm" onClick={ejectAll}>
+            Eject all
+          </button>
+        </div>
       </div>
 
       <div className="dock-wrap">

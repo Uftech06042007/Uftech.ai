@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Cta() {
   return (
     <section className="cta" id="cta">
@@ -7,10 +9,10 @@ export default function Cta() {
           <h2>Have a number you need moved? Let&apos;s read the brief.</h2>
           <p>A senior AI lead replies within one business day — not a sales sequence.</p>
         </div>
-        <div style={{ display: "flex", gap: 12, flex: "none", flexWrap: "wrap" }}>
-          <a className="btn primary" href="/contact">
+        <div className="ctabtns">
+          <Link className="btn primary" href="/contact">
             Start a conversation →
-          </a>
+          </Link>
         </div>
       </div>
     </section>

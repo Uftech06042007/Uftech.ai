@@ -23,11 +23,11 @@ export const SERVICES: ServiceItem[] = [
     t: "Custom AI Agents",
     video: "/videos/custom-agent.mp4",
     visual: "agents",
-    b: "We design and deploy custom AI agents that plan, reason and act across your workflows — sourcing candidates, answering customers, triaging requests — wired into the platforms your team already uses, with every step logged and auditable.",
+    b: "Agents that plan, reason and act across your workflows — sourcing candidates, answering customers, triaging requests — wired into the platforms your team already uses, with every step logged and auditable.",
     l: [
       "Multi-step task orchestration",
       "Tool-use & API integration",
-      "RAG / semantic retrieval grounding",
+      "Long-running task memory",
       "Guardrails & per-step audit trails",
     ],
     s1: "8×",
@@ -40,7 +40,7 @@ export const SERVICES: ServiceItem[] = [
     t: "GenAI & RAG Systems",
     video: "/videos/ai-rag.mp4",
     visual: "genai",
-    b: "Generative AI wired into real business data. We build retrieval-augmented systems over your documents, policies and databases, so models answer from facts, cite their sources, and rank answers you can trust to production.",
+    b: "GenAI grounded in real business data. We build retrieval-augmented systems over your documents, policies and databases, so models answer from facts, cite their sources, and rank answers you can trust to production.",
     l: [
       "Semantic search & RAG",
       "Vector retrieval on Postgres / PG Vector",
@@ -74,7 +74,7 @@ export const SERVICES: ServiceItem[] = [
     t: "Enterprise Automation",
     video: "/videos/ai-business_automation.mp4",
     visual: "automation",
-    b: "Intelligent automation of end-to-end business processes — onboarding, payroll orchestration, claims and data reconciliation — removing manual handoffs and error while keeping a clean, end-to-end audit trail.",
+    b: "Intelligent automation of business processes start to finish — onboarding, payroll orchestration, claims and data reconciliation — removing manual handoffs and error while keeping a clean audit trail.",
     l: [
       "Process mapping & optimisation",
       "Workflow & report automation",
@@ -108,7 +108,7 @@ export const SERVICES: ServiceItem[] = [
     t: "Model Deployment & MLOps",
     video: "/videos/ai-mlops.mp4",
     visual: "mlops",
-    b: "Production-grade deployment of your models and agents — containerised, versioned and served behind your own infrastructure. We own uptime, rollback and monitoring so the business never thinks about serving.",
+    b: "Production deployment of your models and agents — containerised, versioned, and served on infrastructure you control. We own uptime, rollback and monitoring, so your team never has to.",
     l: [
       "Containerised deployment",
       "Model registry & versioning",
@@ -123,15 +123,15 @@ export const SERVICES: ServiceItem[] = [
 ];
 
 export const SHORT: string[] = [
-  "Agents that orchestrate your workflows end-to-end.",
-  "Generative AI grounded in your documents and data.",
+  "Agents that plan, reason and act across your workflows.",
+  "GenAI grounded in your documents and data.",
   "Copilots embedded in the tools people already use.",
   "Automation that removes manual, repetitive work.",
   "Real-time fraud detection and credit risk scoring.",
   "Containerised, versioned deployment with rollback.",
 ];
 
-export type ProductVisualKind = "talent-crm" | "talent" | "hrms" | "crm";
+export type ProductVisualKind = "talent-crm" | "talent" | "hrms" | "crm" | "support-bots";
 
 export interface ProductFeat {
   t: string;
@@ -175,23 +175,50 @@ export const PRODUCTS: ProductItem[] = [
     s2l: "Faster sales cycle",
   },
   {
-    k: "02 / HRMS",
-    t: "AI HRMS",
-    tag: "PRODUCT · AI HRMS",
+    k: "02 / HRMS & Compliance",
+    t: "AI HRMS & Compliance",
+    tag: "PRODUCT · AI HRMS & COMPLIANCE",
     video: "/videos/ai-hrms.mp4",
     visual: "hrms",
-    short: "From onboarding to payroll, one system. Humans handled, quietly.",
-    chips: ["Payroll automation", "Attendance & leave", "Performance cycles", "Employee self-service"],
+    short: "From onboarding to payroll to statutory filings, one system. Humans handled, compliance covered.",
+    chips: [
+      "Payroll automation",
+      "Attendance & leave",
+      "Performance cycles",
+      "Employee self-service",
+      "Statutory compliance",
+    ],
     feats: [
       { t: "Lifecycle", d: "onboard to offboard" },
       { t: "Payroll", d: "payslips in one tap" },
       { t: "Appraisals", d: "continuous review loops" },
       { t: "People analytics", d: "headcount pulses" },
+      { t: "Compliance", d: "PF, ESI, TDS tracked & filed" },
+      { t: "Audit trail", d: "every change logged" },
     ],
     s1: "35%",
     s1l: "Less admin time",
     s2: "10k+",
     s2l: "Employees managed",
+  },
+  {
+    k: "03 / Finance Bot",
+    t: "AI Finance Bot",
+    tag: "PRODUCT · CONVERSATIONAL AI",
+    video: "/videos/finance_bot.mp4",
+    visual: "support-bots",
+    short: "A conversational agent for Procure-to-Pay — vendor invoice status and issue handling, on demand.",
+    chips: ["Vendor invoice status", "P2P query handling", "Auto-escalation", "24/7, human handoff"],
+    feats: [
+      { t: "Invoice status", d: "due, blocked, paid, or debit balance — on request" },
+      { t: "Auto-escalation", d: "emails finance staff the moment an invoice issue is flagged" },
+      { t: "P2P guidance", d: "walks vendors & staff through invoice issues, e.g. payment disputes" },
+      { t: "Natural language", d: "handles free text, typos and phrasing without a rigid form" },
+    ],
+    s1: "24/7",
+    s1l: "Vendor query coverage",
+    s2: "70%",
+    s2l: "Fewer hours on manual follow-ups",
   },
 ];
 
@@ -215,12 +242,17 @@ export const STAGES: Stage[] = [
   {
     num: "Stage 03",
     t: "Embed",
-    b: "Deployment, evaluation, guardrails and audit trail — then into the hands of the team that owns the outcome.",
+    b: "Rollout, evaluation, guardrails and an audit trail — then into the hands of the team that owns the outcome.",
   },
   {
     num: "Stage 04",
     t: "Operate",
     b: "We run it, or we train your people to. Either way, the plan is written down before we start.",
+  },
+  {
+    num: "Stage 05",
+    t: "Support",
+    b: "Launch isn't the finish line. We stay on for monitoring, patches and SLA-backed fixes, so what we build keeps working long after go-live.",
   },
 ];
 

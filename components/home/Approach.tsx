@@ -28,7 +28,7 @@ export default function Approach() {
   // Autoplay, paused while held (hover/click/scroll-in-view).
   useEffect(() => {
     const t = setInterval(() => {
-      if (!heldRef.current) setStageIdx((i) => (i + 1) % 4);
+      if (!heldRef.current) setStageIdx((i) => (i + 1) % STAGES.length);
     }, 1100);
     return () => clearInterval(t);
   }, []);
@@ -49,7 +49,7 @@ export default function Approach() {
       if (inView) {
         const total = rect.height + vh;
         const progressed = Math.min(Math.max(vh - rect.top, 0), total);
-        const idx = Math.min(3, Math.floor((progressed / total) * 4));
+        const idx = Math.min(STAGES.length - 1, Math.floor((progressed / total) * STAGES.length));
         heldRef.current = true;
         setStageIdx((prev) => (prev === idx ? prev : idx));
       } else {
@@ -76,7 +76,7 @@ export default function Approach() {
       <div className="sechead">
         <div>
           <div className="kicker">[ How we work ]</div>
-          <h2>From first pilot to always-on AI — four stages, in order.</h2>
+          <h2>From first pilot to always-on AI — five stages, in order.</h2>
         </div>
       </div>
 
@@ -87,7 +87,7 @@ export default function Approach() {
       >
         <div className="stages" style={{ paddingTop: 8 }}>
           <div className="stagebar" />
-          <div className="stagefill" style={{ width: `${(stageIdx + 1) * 25}%` }} />
+          <div className="stagefill" style={{ width: `${((stageIdx + 1) / STAGES.length) * 100}%` }} />
           <div className="tracer" />
           <div className="stagerow">
             {STAGES.map((s, i) => (

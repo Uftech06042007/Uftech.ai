@@ -28,6 +28,7 @@ function Stage({ kind, colors }: { kind: CardVisualKind; colors: ThreeColors }) 
   if (kind === "talent") return <TalentGeo colors={colors} />;
   if (kind === "hrms") return <HrmsGeo colors={colors} />;
   if (kind === "crm") return <CrmGeo colors={colors} />;
+  if (kind === "support-bots") return <CopilotsGeo colors={colors} />;
   if (kind === "agents") return <AgentsGeo colors={colors} />;
   if (kind === "genai") return <GenAIGeo colors={colors} />;
   if (kind === "copilots") return <CopilotsGeo colors={colors} />;

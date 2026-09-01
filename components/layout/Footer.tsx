@@ -1,49 +1,77 @@
+"use client";
+
 import Link from "next/link";
+import { useTheme } from "@/lib/ThemeContext";
+
+const LINKEDIN_PATH =
+  "M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.03-1.85-3.03-1.85 0-2.14 1.45-2.14 2.94v5.66H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.61 0 4.28 2.38 4.28 5.47v6.27zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z";
+const X_PATH =
+  "M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z";
+const FACEBOOK_PATH =
+  "M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.892h-2.33v6.987C18.343 21.128 22 16.991 22 12z";
 
 export default function Footer() {
+  const { theme } = useTheme();
+
   return (
     <footer>
       <div className="fcols">
         <div className="fcol fabout">
-          <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 16 }}>
-            <div className="brandmark" style={{ width: 28, height: 28 }}>
-              UFT
+          <Link
+            href="/"
+            className="brandlink fbrand"
+            aria-label="UFTECH.AI home"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- the source
+                artwork must render pixel-exact, with no resize/format pass */}
+            <img
+              src={theme === "day" ? "/images/uft-logo.png" : "/images/uft-logo-dark.png"}
+              alt="UFT — Unitforce Technologies Consulting Pvt Ltd"
+              className="brandlogo"
+            />
+            <div className="brandtext">
+              <div>Unitforce Technologies</div>
+              <div>Consulting Pvt Ltd</div>
             </div>
-            <span style={{ font: "600 16px var(--font-barlow-condensed),'Barlow Condensed',sans-serif", letterSpacing: ".1em" }}>
-              UFTECH.AI
-            </span>
-          </div>
+          </Link>
           <p>
             Unitforce Technologies — custom AI agents, copilots, GenAI, automation and enterprise
             products, serving clients across India, Europe, the US and the Middle East.
           </p>
           <div style={{ display: "flex", gap: 8 }}>
             <a
-              className="mono"
+              className="fsocial"
               href="https://www.linkedin.com/company/uftjobs/"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ fontSize: 11, padding: "6px 9px", border: "1px solid var(--line)", color: "var(--ink2)" }}
+              aria-label="UFTECH.AI on LinkedIn"
             >
-              in
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d={LINKEDIN_PATH} />
+              </svg>
             </a>
             <a
-              className="mono"
+              className="fsocial"
               href="https://x.com/uftec"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ fontSize: 11, padding: "6px 9px", border: "1px solid var(--line)", color: "var(--ink2)" }}
+              aria-label="UFTECH.AI on X"
             >
-              X
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d={X_PATH} />
+              </svg>
             </a>
             <a
-              className="mono"
+              className="fsocial"
               href="https://www.facebook.com/uftjobs"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ fontSize: 11, padding: "6px 9px", border: "1px solid var(--line)", color: "var(--ink2)" }}
+              aria-label="UFTECH.AI on Facebook"
             >
-              f
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d={FACEBOOK_PATH} />
+              </svg>
             </a>
           </div>
         </div>
@@ -51,7 +79,8 @@ export default function Footer() {
           <h5>AI PRODUCTS</h5>
           <div className="flinks">
             <Link href="/#products">AI Talent &amp; CRM</Link>
-            <Link href="/#products">AI HRMS</Link>
+            <Link href="/#products">AI HRMS &amp; Compliance</Link>
+            <Link href="/#products">AI Finance Bot</Link>
           </div>
           <h5 style={{ marginTop: 20 }}>AI SERVICES</h5>
           <div className="flinks">
