@@ -1,13 +1,20 @@
 # UFTECH.AI
 
-Marketing site — Next.js 16 (App Router), React 19, TypeScript.
+Marketing site for UFTECH.AI (Unitforce Technologies) — Next.js 16 (App Router),
+React 19, TypeScript.
+
+- Marketing pages: home, about, contact
+- Contact form with email delivery and lead storage
+- A site assistant that answers questions about the company and can capture
+  enquiries conversationally
 
 ## Requirements
 
 - Node.js 20.9 or later
 - npm
+- PostgreSQL (for lead storage)
 
-## Local development
+## Getting started
 
 ```bash
 npm install
@@ -65,7 +72,46 @@ committed file):
   additional 3 req/min burst cap and 10 req/hour sustained cap on top of that.
   Only add these vars if those numbers don't fit.
 
-## Production build (bare metal / VM)
+### Values to set for a production deployment
+
+Set these in the hosting platform's environment configuration, never in a
+committed file.
+
+- `NEXT_PUBLIC_SITE_URL` — the canonical origin, including the scheme and with
+  no trailing slash (for example `https://example.com`). Used for Open Graph
+  tags, `robots.txt` and the sitemap.
+- `RESEND_API_KEY` and `CONTACT_FROM_EMAIL` — a live [Resend](https://resend.com)
+  key and a sender address on a domain verified there. The default sandbox
+  sender does not deliver to arbitrary inboxes.
+- `CONTACT_TO_EMAIL` — the inbox that should receive enquiries.
+- `ANTHROPIC_API_KEY` — required for the assistant. Set `ANTHROPIC_BASE_URL`
+  and `AI_MODEL` as well if you are using an Anthropic-compatible endpoint
+  rather than Anthropic directly.
+- `DATABASE_URL` — the production PostgreSQL connection string.
+
+## Database
+
+The Prisma models live in a dedicated `marketing` PostgreSQL schema, so the
+connection string can point at a database that hosts other schemas as well.
+
+Apply the schema to a new database:
+
+```bash
+npx prisma migrate deploy
+```
+
+If the target database already contains the `marketing` tables, record the
+baseline as applied instead — `migrate deploy` will otherwise fail trying to
+create tables that exist:
+
+```bash
+npx prisma migrate resolve --applied 0_init
+```
+
+Migrations are not run during the build. Apply them as an explicit step against
+a known connection string.
+
+## Production build
 
 ```bash
 npm ci
