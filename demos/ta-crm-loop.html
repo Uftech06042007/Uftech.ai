@@ -9,36 +9,50 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
 <style>
 /* ============================================================================
-   UFT · Talent + CRM — one autonomous 33s loop, three surfaces.
+   UFT · Talent + CRM — one autonomous 26s loop, five surfaces, no input.
 
-     0.0 - 11.0   CRM Dashboard        src/app/(crm)/crm/dashboard-client.tsx
-    11.0 - 22.0   Client Overview      src/app/(internal)/dashboard/client/[id]/page.tsx
-    22.0 - 33.0   Candidate Pipeline   STAGE_LABEL, src/lib/chatbot/query-tools.ts
+     0.00 –  5.20  CRM Dashboard        + assistant runs today's report
+     5.20 – 10.40  All Clients          + Create Client
+    10.40 – 15.60  Leads                + Add Lead, then up the status ladder
+    15.60 – 20.80  Job Postings         + describe it once, AI fills the form
+    20.80 – 26.00  Candidate Pipeline   + assistant moves a candidate, books the interview
 
-   Every label is a real string from the product. Every number is synthetic but
-   reconciles ACROSS the acts: the pipeline in act 3 is the Senior React
-   Developer row of act 2's jobs table, and act 2's client is one of act 1's
-   accounts. Nothing is generated or invented at render time.
+   WHERE EVERY SCREEN COMES FROM
+     sidebar   src/lib/sidebar-config.ts — clientsSection() and the Recruitment
+               section — plus modules/nav.ts CRM (Dashboard/Leads/Deals/Activities)
+     act 1     src/app/(crm)/crm/dashboard-client.tsx + components/shared/ChatbotButton.tsx
+               ("Generate my team's report" is one of its ACCOUNT_MANAGER suggestions)
+     act 2     components/clients/ClientsPage.tsx + CreateClientDialog.tsx —
+               grouped IT / Non-IT, and the dialog's own field list
+     act 3     src/app/(crm)/crm/leads/page.tsx — the new -> reviewing -> approved
+               ladder with its icons, sourceLabels, and RESPONSE_CATEGORIES
+     act 4     the job form: Title / Location / Type / Open Positions / Posting
+               Duration / Primary Skills / Description, each carrying its AI tag
+     act 5     STAGE_LABEL from src/lib/chatbot/query-tools.ts, and the rule at
+               its line 188 — moving INTO Client Interview needs an interview
+               date/time, which is why the assistant asks before it moves anyone
+
+   Labels, field names, placeholders, status ladders and stage names are the
+   product's own. People, companies and figures are synthetic, and they
+   reconcile across acts: the client created in act 2 is the account the lead
+   converts to in act 3, whose job is posted in act 4 and staffed in act 5.
 
    HOW THE LOOP HOLDS
-   Motion is pure CSS. Every animation runs `33s infinite`, so they cannot
-   drift apart and the browser composites them off the main thread. An act is
-   phase-shifted onto its slot with `animation-delay` (0s / 11s / 22s) rather
-   than given its own timeline — one clock, three offsets.
-   t=0 sits in the MIDDLE of the act3 -> act1 cross-dissolve. That is what
-   makes the seam invisible: at 0% and at 100% all three layers hold identical
-   values, so the wrap has nothing to show.
-   Each act's CONTENT starts 1.8s before its own layer does, so a dashboard is
-   already assembling as it fades in. Without that the dissolve happened over
-   an empty panel — half a second of blank cream, three times a loop, which was
-   the single worst frame in the reel it replaces. The entrances therefore hold
-   until 43% and reset at 48%, both of which land while their act is invisible.
-   The only JS is the odometers, and they take their clock from a real CSS
-   animation via getAnimations() rather than performance.now(), so a number can
-   never slide out of step with the panel it sits in.
+   Motion is pure CSS. Every animation runs `26s infinite`, so they cannot drift
+   apart and the browser composites them off the main thread. An act is
+   phase-shifted onto its slot with `animation-delay` — one clock, five offsets.
+   t=0 sits in the MIDDLE of the act5 -> act1 dissolve, so 0% and 100% hold
+   identical values for all five layers and the wrap has nothing to show.
+   Each act's CONTENT starts 0.9s before its own layer, so a screen is already
+   assembling as it fades in — otherwise the dissolve plays over an empty panel.
+   The only JS is the odometers and one measured distance; the odometers take
+   their clock from a real CSS animation via getAnimations(), so a number cannot
+   slide out of step with the panel it sits in.
    ========================================================================== */
 :root{
-  /* src/app/globals.css — the UFT light theme */
+  /* src/app/globals.css — the UFT light theme. The CRM surfaces derive from the
+     same tokens (--surface2 is a mix of --card and --foreground), so one
+     palette covers all five screens. */
   --background:#F7F2EC; --foreground:#1A1A1A;
   --card:#FFFFFF;
   --primary:#C2410C; --primary-foreground:#FFFFFF;
@@ -48,17 +62,23 @@
   --border:#E7DCCE;
   --sidebar:#05070C; --sidebar-foreground:#E5E7EB;
   --sidebar-primary:#FB923C; --sidebar-accent:#0F1219; --sidebar-border:#2A2317;
-  --blue:#2563EB; --violet:#7C3AED; --amber:#D97706; --emerald:#059669; --orange:#EA580C;
-  --rose:#E11D48;
+  --blue:#2563EB; --violet:#7C3AED; --amber:#D97706; --emerald:#059669;
+  --orange:#EA580C; --rose:#E11D48; --sky:#0284C7;
 
-  /* The one number the whole file is keyed to. Every duration below is a
-     percentage of it, so re-timing the reel means editing this line only. */
-  --cycle:33s;
+  /* THE SPEED LEVER. Every delay in the file is a multiple of --u and every
+     keyframe percentage is relative to --cycle, so these two lines re-time the
+     whole reel and nothing else has to change. Want 20s instead of 26s? Set
+     --u to 0.769s. Want 32s? Set it to 1.23s. Keep --cycle at 26 units. */
+  --u:1s;
+  --cycle:calc(var(--u) * 26);
 
-  /* sidebar pill stops — brand 72 + label 26, rows at a 36px pitch */
-  --m1:0px;    /* CRM · Dashboard          */
-  --m2:242px;  /* TA · Clients             */
-  --m3:314px;  /* TA · Candidate Pipeline  */
+  /* Sidebar pill stops. Rows sit on a 36px pitch, headings take 26px, and the
+     nav starts under the 72px brand block. */
+  --m1:26px;    /* CRM · Dashboard                  */
+  --m2:196px;   /* Clients · All Clients            */
+  --m3:62px;    /* CRM · Leads                      */
+  --m4:294px;   /* Recruitment · Job Postings       */
+  --m5:330px;   /* Recruitment · Candidate Pipeline */
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -69,17 +89,12 @@ body{
 }
 
 /* ---------------------------------------------------------------------------
-   The canvas is a fixed 1200x750 (1.6:1), scaled to whatever box it lands in.
-   1.6:1 is not arbitrary — it is the measured aspect of `.psplit-visual` on
-   uftech.ai (grid 1.04fr, min-height 380px), so the reel fills that card with
-   no crop. A fixed canvas also keeps type honest: 1200 downscales to ~610 on
-   the card, so anything that must stay legible there is set at 2x the size it
-   would be in the real app.
+   Fixed 1200x750 canvas (1.6:1 — the measured aspect of `.psplit-visual` on
+   uftech.ai), scaled into whatever box it lands in. Centred with an explicit
+   translate rather than grid centring: once the canvas is wider than its
+   container, `place-items:center` clamps to the start edge instead of
+   overflowing both ways, and the reel drifts off to the right.
    --------------------------------------------------------------------------- */
-/* Centred with an explicit translate rather than grid centring: once the
-   canvas is wider than its container, `place-items:center` clamps to the start
-   edge instead of overflowing both ways, and the reel drifts off to the right.
-   translate(-50%,-50%) holds no such opinion. */
 .frame{position:fixed;inset:0;overflow:hidden;background:#0b0c0e}
 .stage{
   position:absolute;top:50%;left:50%;
@@ -88,7 +103,7 @@ body{
   transform:translate(-50%,-50%);transform-origin:center center;
 }
 
-/* ---------- sidebar ------------------------------------------------------- */
+/* ---------- sidebar — the real three sections, all on screen at once ------- */
 .sb{
   flex:none;width:196px;background:var(--sidebar);color:var(--sidebar-foreground);
   padding:0 10px 14px;position:relative;overflow:hidden;
@@ -98,7 +113,7 @@ body{
   border-bottom:1px solid var(--sidebar-border);
 }
 .sb .brand img{max-width:128px;max-height:42px;object-fit:contain;margin-left:14px}
-.nav{position:relative;padding-top:0}
+.nav{position:relative}
 .nav h6{
   height:26px;margin:0;padding:10px 8px 0;font-size:9.5px;letter-spacing:.15em;
   text-transform:uppercase;color:#5f6874;font-weight:700;
@@ -112,9 +127,9 @@ body{
   margin-left:auto;font-size:9.5px;font-weight:700;border-radius:999px;
   background:#1b1f27;color:#8b929c;padding:1px 6px;
 }
-/* the active pill slides between acts instead of blinking on and off */
+/* the active pill slides between the five destinations rather than blinking */
 .sbmark{
-  position:absolute;top:26px;left:0;right:0;height:36px;border-radius:8px;
+  position:absolute;top:0;left:0;right:0;height:36px;border-radius:8px;
   background:var(--sidebar-accent);border:1px solid var(--sidebar-primary);
   z-index:1;animation:markmove var(--cycle) infinite;
 }
@@ -125,62 +140,56 @@ body{
   background-image:radial-gradient(rgba(194,65,12,.085) 1px,transparent 1px);
   background-size:22px 22px;
 }
-/* Acts are flex columns so the body region fills the canvas instead of
-   clumping at the top: act 1 is dense enough to fill on its own, but acts 2
-   and 3 left 228px and 154px of dead space under them. The panels stretch,
-   the whitespace ends up inside them where it reads as breathing room. */
-.act{position:absolute;inset:0;padding:22px 24px;overflow:hidden;display:flex;flex-direction:column}
-.a2grid,.a3grid{flex:1;min-height:0}
-.a2grid>.panel,.a3grid>div{height:100%}
-.a2grid>.panel{display:flex;flex-direction:column}
-.a2grid>.panel svg{flex:none}
-.kanban{height:100%}
-.col{height:100%}
+.act{position:absolute;inset:0;padding:20px 22px;overflow:hidden;display:flex;flex-direction:column}
 .a1{animation:a1fade var(--cycle) infinite}
 .a2{animation:a2fade var(--cycle) infinite}
 .a3{animation:a3fade var(--cycle) infinite}
+.a4{animation:a4fade var(--cycle) infinite}
+.a5{animation:a5fade var(--cycle) infinite}
 
 /* ---------- shared furniture --------------------------------------------- */
-.eyebrow{
-  margin:0;font-size:11px;font-weight:700;letter-spacing:.17em;
-  text-transform:uppercase;color:var(--primary);
-}
+.eyebrow{margin:0;font-size:10.5px;font-weight:700;letter-spacing:.17em;text-transform:uppercase;color:var(--primary)}
 .dhead{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:12px}
-.dhead h1{margin:5px 0 0;font-size:29px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
-.dhead .sub{margin:5px 0 0;font-size:12.5px;color:var(--muted-foreground);display:flex;align-items:center;gap:9px}
+.dhead h1{margin:4px 0 0;font-size:27px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.dhead .sub{margin:4px 0 0;font-size:12.5px;color:var(--muted-foreground);display:flex;align-items:center;gap:8px}
 .segs{display:inline-flex;border:1px solid var(--border);background:var(--card);border-radius:999px;padding:3px}
-.segs b{font-size:12px;font-weight:500;border-radius:999px;padding:5px 13px;color:var(--muted-foreground)}
+.segs b{font-size:11.5px;font-weight:500;border-radius:999px;padding:5px 12px;color:var(--muted-foreground)}
 .segs b.on{background:var(--primary);color:var(--primary-foreground);font-weight:600}
-.badge{
-  display:inline-block;border-radius:5px;font-size:9.5px;font-weight:700;
-  letter-spacing:.07em;padding:2px 7px;text-transform:uppercase;
-}
+.badge{display:inline-block;border-radius:5px;font-size:9px;font-weight:700;letter-spacing:.07em;padding:2px 7px;text-transform:uppercase}
 .badge.it{background:#DBEAFE;color:#1D4ED8}
-.panel{border:1px solid var(--border);background:var(--card);border-radius:14px;padding:14px 18px}
-.ph{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}
-.ph h3{margin:0;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px}
-.ph .ic{width:24px;height:24px;border-radius:7px;background:var(--accent);display:grid;place-items:center;flex:none}
-.ph .ic svg{width:13px;height:13px;color:var(--primary)}
+.badge.ok{background:#D1FAE5;color:#047857}
+.panel{border:1px solid var(--border);background:var(--card);border-radius:14px;padding:14px 16px}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.ph h3{margin:0;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.ph .ic{width:23px;height:23px;border-radius:7px;background:var(--accent);display:grid;place-items:center;flex:none}
+.ph .ic svg{width:12px;height:12px;color:var(--primary)}
 .pill{border-radius:999px;background:var(--muted);padding:3px 10px;font-size:11px;font-weight:500;color:var(--muted-foreground)}
-.delta{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--emerald)}
-.delta svg{width:12px;height:12px}
+.delta{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--emerald)}
+.delta svg{width:11px;height:11px}
+.btnp{display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:#fff;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:600}
+.btnp svg{width:13px;height:13px}
+.btno{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--card);color:var(--foreground);border-radius:8px;padding:7px 13px;font-size:12px;font-weight:500}
+.btno svg{width:13px;height:13px;color:var(--muted-foreground)}
+.search{display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--card);border-radius:8px;padding:7px 11px;font-size:12px;color:#B9AE9F;width:230px}
+.search svg{width:14px;height:14px;color:var(--muted-foreground)}
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.toolbar .sp{margin-left:auto}
 
 /* ---------- act 1 · CRM dashboard ---------------------------------------- */
-.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-bottom:10px}
-.kpi{border:1px solid var(--border);background:var(--card);border-radius:12px;padding:11px 11px 12px}
-.kpi .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:11px}
+.kpi{border:1px solid var(--border);background:var(--card);border-radius:12px;padding:11px}
+.kpi .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
 .kpi .lbl{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-foreground)}
-.kpi .ic{width:23px;height:23px;border-radius:8px;display:grid;place-items:center;flex:none}
+.kpi .ic{width:22px;height:22px;border-radius:8px;display:grid;place-items:center;flex:none}
 .kpi .ic svg{width:12px;height:12px}
-/* 29px here lands at ~15px once the card downscales it — the smallest that
-   still reads as a number rather than as texture. */
-.kpi b{display:block;font-size:29px;font-weight:700;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums}
-.kpi small{display:block;margin-top:5px;font-size:10px;color:var(--muted-foreground)}
-.a1grid{display:grid;grid-template-columns:1fr 288px;gap:13px;align-items:start}
-.a1left{display:grid;gap:10px}
-.a1right{display:grid;gap:13px}
-.axis{font-size:10px;fill:var(--muted-foreground);font-variant-numeric:tabular-nums}
-.axl{font-size:10.5px;fill:var(--muted-foreground)}
+/* 28px lands at ~14px once the card downscales it — the smallest that still
+   reads as a number rather than as texture. */
+.kpi b{display:block;font-size:28px;font-weight:700;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums}
+.kpi small{display:block;margin-top:4px;font-size:10px;color:var(--muted-foreground)}
+.a1grid{display:grid;grid-template-columns:1fr 318px;gap:12px;align-items:stretch;flex:1;min-height:0}
+.a1left{display:grid;gap:11px;align-content:start}
+.axis{font-size:9.5px;fill:var(--muted-foreground);font-variant-numeric:tabular-nums}
+.axl{font-size:10px;fill:var(--muted-foreground)}
 .gl{stroke:var(--border);stroke-width:1}
 .bar{fill:var(--primary);transform-box:fill-box;transform-origin:bottom;transform:scaleY(0);animation:grow var(--cycle) infinite}
 .bar.won{fill:var(--emerald)}
@@ -188,215 +197,306 @@ body{
   stroke-dasharray:640;stroke-dashoffset:640;animation:draw var(--cycle) infinite}
 .rarea{fill:url(#rg);opacity:0;animation:areain var(--cycle) infinite}
 .rdot{fill:var(--card);stroke:var(--primary);stroke-width:2.5;opacity:0;transform-box:fill-box;transform-origin:center;animation:dotin var(--cycle) infinite}
-.dwrap{position:relative;display:grid;place-items:center}
-.donut{transform:rotate(-90deg)}
-.dtrack{fill:none;stroke:var(--muted);stroke-width:13}
-.dval{fill:none;stroke:var(--emerald);stroke-width:13;stroke-linecap:round;
-  stroke-dasharray:289.03;stroke-dashoffset:289.03;animation:sweep var(--cycle) infinite}
-.dcen{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
-.dcen b{display:block;font-size:25px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
-.dcen span{display:block;font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted-foreground);margin-top:5px}
-.hrows{display:grid;gap:10px}
-.hrow{display:flex;align-items:center;gap:9px;font-size:11.5px}
-.hrow .nm{width:78px;flex:none;color:var(--muted-foreground)}
-.hrow .bb{flex:1;height:8px;border-radius:999px;background:var(--muted);overflow:hidden}
-.hrow .bb i{display:block;height:100%;border-radius:999px;background:var(--secondary);transform-origin:left;transform:scaleX(0);animation:growx var(--cycle) infinite}
-.hrow .v{width:18px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 
-/* ---------- act 2 · client overview -------------------------------------- */
-.hmcards{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:13px}
-.hmcard{border:1px solid var(--border);background:var(--card);border-radius:13px;padding:13px}
-.hmid{display:flex;align-items:flex-start;gap:10px;margin-bottom:11px}
-.hmav{width:33px;height:33px;flex:none;border-radius:50%;background:var(--accent);color:var(--primary);
-  display:grid;place-items:center;font-size:14px;font-weight:700}
-.hmid p{margin:0;font-size:13.5px;font-weight:600;line-height:1.25}
-.hmid small{display:block;font-size:10.5px;color:var(--muted-foreground);margin-top:1px}
-.hmid em{display:block;font-style:normal;font-size:10px;color:var(--primary);margin-top:3px}
-.hmstats{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;border-radius:9px;background:var(--muted);padding:9px 5px}
-.hmstats div{text-align:center}
-.hmstats b{display:block;font-size:17px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
-.hmstats span{display:block;font-size:8px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted-foreground);margin-top:4px}
-.a2grid{display:grid;grid-template-columns:1fr 306px;gap:13px;align-items:start}
-.a2rail{display:grid;gap:13px;align-content:start;height:100%;grid-template-rows:auto 1fr}
-.jt{width:100%;border-collapse:collapse;font-size:12px}
-.jt th{
-  text-align:left;padding:0 7px 9px;font-size:9px;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--muted-foreground);font-weight:700;border-bottom:1px solid var(--border);
-}
+/* ---------- the assistant (ChatbotButton.tsx) ----------------------------- */
+.chat{display:flex;flex-direction:column;border:1px solid var(--border);background:var(--card);border-radius:14px;overflow:hidden;min-height:0}
+.chath{display:flex;align-items:center;gap:9px;padding:11px 13px;border-bottom:1px solid var(--border);flex:none}
+.chath .av{width:28px;height:28px;border-radius:50%;background:var(--primary);display:grid;place-items:center;flex:none}
+.chath .av svg{width:15px;height:15px;color:#fff}
+.chath b{display:block;font-size:12.5px;font-weight:600;line-height:1.2}
+.chath small{display:block;font-size:10px;color:var(--muted-foreground);margin-top:1px}
+.chatb{flex:1;min-height:0;padding:12px;display:flex;flex-direction:column;gap:9px;overflow:hidden}
+.mu{align-self:flex-end;max-width:88%;background:var(--primary);color:#fff;border-radius:12px 12px 3px 12px;padding:8px 11px;font-size:12px;line-height:1.4}
+.ma{display:flex;gap:8px;align-items:flex-start;max-width:96%}
+.ma .sp{width:22px;height:22px;flex:none;border-radius:50%;background:var(--accent);display:grid;place-items:center}
+.ma .sp svg{width:12px;height:12px;color:var(--primary)}
+.bub{background:var(--muted);border-radius:12px 12px 12px 3px;padding:8px 11px;font-size:12px;line-height:1.45}
+.bub b{font-weight:600}
+.rcard{border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.rcard .rh{display:flex;align-items:center;gap:7px;padding:8px 10px;background:var(--muted);font-size:10.5px;font-weight:600}
+.rcard .rh svg{width:13px;height:13px;color:var(--emerald);flex:none}
+.rcard .rt{display:flex;gap:4px;padding:7px 8px 0}
+.rcard .rt i{font-style:normal;font-size:9px;font-weight:600;border-radius:5px;padding:2px 7px;color:var(--muted-foreground);background:var(--muted)}
+.rcard .rt i.on{background:var(--primary);color:#fff}
+.rgrid{width:100%;border-collapse:collapse;font-size:10px}
+.rgrid th{text-align:left;padding:6px 8px;color:var(--muted-foreground);font-weight:700;font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.rgrid td{padding:5px 8px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
+.rgrid tr:last-child td{border-bottom:0;font-weight:700}
+.chatin{display:flex;align-items:center;gap:8px;margin:0 12px 12px;border:1px solid var(--border);border-radius:999px;padding:7px 8px 7px 13px;font-size:11px;color:#B9AE9F;flex:none}
+.chatin .send{margin-left:auto;width:24px;height:24px;border-radius:50%;background:var(--primary);display:grid;place-items:center;flex:none}
+.chatin .send svg{width:12px;height:12px;color:#fff}
+
+/* ---------- act 2 · all clients ------------------------------------------ */
+.cglabel{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+.cglabel .tag{border-radius:5px;font-size:9.5px;font-weight:700;padding:2px 8px}
+.cglabel .tag.it{background:#DBEAFE;color:#1D4ED8}
+.cglabel .tag.nit{background:#FFEDD5;color:#C2410C}
+.cglabel span{font-size:10.5px;color:var(--muted-foreground)}
+.clist{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:13px}
+.ccard{display:flex;align-items:center;gap:10px;border:1px solid var(--border);background:var(--card);border-radius:10px;padding:9px 11px}
+.ccard .sq{width:34px;height:34px;flex:none;border-radius:8px;background:var(--muted);display:grid;place-items:center}
+.ccard .sq svg{width:15px;height:15px;color:var(--muted-foreground)}
+.ccard .bd{min-width:0;flex:1}
+.ccard .bd .cat{display:inline-block;border:1px solid var(--border);border-radius:4px;padding:0 5px;font-size:9px;color:var(--muted-foreground)}
+.ccard .bd p{margin:2px 0 0;font-size:12.5px;font-weight:600;line-height:1.2}
+.ccard .bd .meta{display:block;font-size:10.5px;color:var(--muted-foreground);margin-top:1px}
+.ccard .bd .nums{display:block;font-size:10px;color:var(--muted-foreground);margin-top:3px;font-variant-numeric:tabular-nums}
+.ccard .chev{width:14px;height:14px;color:var(--muted-foreground);flex:none}
+/* the row created during the act, ringed the way a fresh row is */
+.fresh{border-color:var(--primary);box-shadow:0 0 0 3px rgba(194,65,12,.10)}
+
+/* ---------- dialogs (CreateClientDialog / Add Lead / New Posting) --------- */
+.scrim{position:absolute;inset:0;background:rgba(26,26,26,.30);display:grid;place-items:center;z-index:20}
+.dlg{width:420px;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 26px 60px -18px rgba(26,26,26,.45);overflow:hidden}
+.dlg.wide{width:600px}
+.dlgh{padding:15px 18px 0}
+.dlgh h4{margin:0;font-size:15px;font-weight:600}
+.dlgh p{margin:3px 0 0;font-size:11.5px;color:var(--muted-foreground)}
+.dlgb{padding:13px 18px;display:grid;gap:10px}
+.fld label{display:block;font-size:11px;font-weight:600;color:var(--muted-foreground);margin-bottom:4px}
+.fld label .star{color:var(--primary)}
+.inp{border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:12px;min-height:32px;display:flex;align-items:center;color:var(--foreground);background:var(--card)}
+.inp.ph{color:#B9AE9F}
+.inp.area{min-height:48px;align-items:flex-start}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.radio{display:flex;gap:8px}
+.radio b{flex:1;border:1px solid var(--border);border-radius:8px;padding:7px;font-size:11.5px;font-weight:500;text-align:center;color:var(--muted-foreground)}
+.radio b.on{border-color:var(--primary);background:var(--accent);color:var(--accent-foreground);font-weight:600}
+.dlgf{display:flex;justify-content:flex-end;gap:9px;padding:0 18px 16px}
+/* a caret that blinks only while its field is the one being filled */
+.car{display:inline-block;width:1.5px;height:13px;background:var(--primary);margin-left:1px;animation:blink .9s steps(1,end) infinite}
+
+/* ---------- act 3 · leads ------------------------------------------------ */
+.lt{width:100%;border-collapse:collapse;font-size:12px}
+.lt th{text-align:left;padding:0 9px 9px;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-foreground);font-weight:700;border-bottom:1px solid var(--border)}
+.lt td{padding:10px 9px;border-bottom:1px solid var(--border)}
+.lt tr:last-child td{border-bottom:0}
+.lt .nm{font-weight:600;display:block;font-size:12.5px}
+.lt .em{font-size:10.5px;color:var(--muted-foreground)}
+.st{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 9px;font-size:10.5px;font-weight:600;border:1px solid;white-space:nowrap}
+.st svg{width:11px;height:11px;flex:none}
+.st.new{background:rgba(2,132,199,.12);color:var(--sky);border-color:rgba(2,132,199,.30)}
+.st.rev{background:rgba(217,119,6,.12);color:var(--amber);border-color:rgba(217,119,6,.30)}
+.st.app{background:rgba(5,150,105,.12);color:var(--emerald);border-color:rgba(5,150,105,.30)}
+/* the one lead whose status climbs new -> reviewing -> approved on screen:
+   three stacked chips, each visible for its own slice of the act */
+.stx{position:relative;display:inline-grid}
+.stx>span{grid-area:1/1;opacity:0;animation:stepin var(--cycle) infinite}
+.src{font-size:10.5px;color:var(--muted-foreground)}
+.ladder{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.ladder b{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 10px;font-size:10.5px;font-weight:600;border:1px solid var(--border);color:var(--muted-foreground);background:var(--card)}
+.ladder b.on{border-color:var(--emerald);background:rgba(5,150,105,.10);color:var(--emerald)}
+.ladder svg{width:11px;height:11px}
+
+/* ---------- act 4 · job postings ----------------------------------------- */
+.jt{width:100%;border-collapse:collapse;font-size:11.5px}
+.jt th{text-align:left;padding:0 8px 9px;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-foreground);font-weight:700;border-bottom:1px solid var(--border)}
 .jt th.n,.jt td.n{text-align:center}
-.jt td{padding:17px 7px;border-bottom:1px solid var(--border)}
+.jt td{padding:10px 8px;border-bottom:1px solid var(--border)}
 .jt tr:last-child td{border-bottom:0}
-.jt .jname{font-weight:600;display:block;font-size:12.5px}
-.jt .jref{font-size:10px;color:var(--muted-foreground);margin-right:6px}
-.chip{display:inline-block;min-width:25px;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
-.chip.b{background:rgba(37,99,235,.10);color:var(--blue)}
-.chip.v{background:rgba(124,58,237,.10);color:var(--violet)}
-.chip.g{background:rgba(5,150,105,.12);color:var(--emerald)}
-.chip.r{background:rgba(225,29,72,.10);color:var(--rose)}
-.gbar{transform-box:fill-box;transform-origin:bottom;transform:scaleY(0);animation:grow var(--cycle) infinite}
-.gbar.sub{fill:var(--violet)}
-.gbar.join{fill:var(--emerald)}
-.lgd{display:flex;gap:13px;font-size:10.5px;color:var(--muted-foreground)}
-.lgd i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px}
+.jt .ref{font-size:10px;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+.aitag{display:inline-block;border-radius:4px;background:var(--accent);color:var(--accent-foreground);font-size:8px;font-weight:700;letter-spacing:.06em;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chips b{border-radius:999px;background:var(--accent);color:var(--accent-foreground);font-size:10.5px;font-weight:600;padding:3px 9px}
+.spin{width:12px;height:12px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
 
-/* ---------- act 3 · candidate pipeline ----------------------------------- */
-.a3grid{display:grid;grid-template-columns:1fr 252px;gap:13px;align-items:start}
-.kanban{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
-.col{border:1px solid var(--border);border-radius:12px;background:var(--card);padding:8px 7px;min-height:346px}
-/* The column the card leaves has to paint above the one it lands in: each
-   column is its own stacking context (they all carry an entrance
-   transform), so DOM order alone would slide the card UNDER its
-   destination. And no overflow:hidden here — that clipped the card the
-   moment it crossed the column edge, so it simply vanished mid-move. */
-.col.s4{position:relative;z-index:6}
-.colh{display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:9px;padding:0 1px;height:26px}
-/* 'Client Submission' wraps to two lines where 'Shortlisted' does not, so
-   without a fixed header box each column started its cards at a different
-   y — and the card that moves between two of them appeared to jump. */
-.colh p{margin:0;font-size:9.5px;font-weight:700;letter-spacing:.02em;line-height:1.25}
-.colh .cn{font-size:9.5px;font-weight:700;border-radius:999px;background:var(--muted);color:var(--muted-foreground);padding:1px 6px;font-variant-numeric:tabular-nums}
+/* ---------- act 5 · candidate pipeline ----------------------------------- */
+.a5grid{display:grid;grid-template-columns:1fr 296px;gap:12px;align-items:stretch;flex:1;min-height:0}
+.kanban{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;height:100%}
+.col{border:1px solid var(--border);border-radius:11px;background:var(--card);padding:7px 6px;height:100%}
+.colh{display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:8px;padding:0 1px;height:26px}
+.colh p{margin:0;font-size:9px;font-weight:700;line-height:1.25}
+.colh .cn{font-size:9px;font-weight:700;border-radius:999px;background:var(--muted);color:var(--muted-foreground);padding:1px 6px;font-variant-numeric:tabular-nums}
 .col.s1{border-top:3px solid var(--muted-foreground)}
 .col.s2{border-top:3px solid var(--blue)}
 .col.s3{border-top:3px solid var(--violet)}
 .col.s4{border-top:3px solid var(--amber)}
 .col.s5{border-top:3px solid var(--orange)}
 .col.s6{border-top:3px solid var(--emerald)}
-.cc{
-  border:1px solid var(--border);border-radius:9px;background:var(--card);
-  padding:7px;margin-bottom:6px;box-shadow:0 1px 2px rgba(26,26,26,.05);
-}
-.cc p{margin:0;font-size:11px;font-weight:600;line-height:1.2}
-.cc small{display:block;font-size:9px;color:var(--muted-foreground);margin-top:3px}
-.cc .sc{
-  display:inline-block;margin-top:5px;border-radius:5px;background:var(--accent);
-  color:var(--accent-foreground);font-size:9px;font-weight:700;padding:1px 5px;font-variant-numeric:tabular-nums;
-}
-/* The one card that moves — Client Interview -> Shortlisted, the exact move
-   the assistant makes in Candidate-Chat.html. It travels the real distance
-   between those two columns rather than dissolving in place, and it sits
-   still for 3s first so the eye has found it before it leaves. */
-.mover{position:relative;z-index:5;animation:moveover var(--cycle) 20.2s infinite;
-  /* one column pitch: kanban 691 / 6 cols / 7px gap = 109.33 + 7. The
-     script re-measures this, these are the values it should arrive at. */
-  --mx:116.33px;--my:0px}
-.ghost{height:0;margin-bottom:0;padding:0;border:0;box-shadow:none;overflow:hidden;--slot:77px;
-  animation:slotopen var(--cycle) 20.2s infinite}
-.fnl{display:grid;gap:11px}
-.frow{display:grid;grid-template-columns:1fr auto;gap:5px 6px;align-items:center}
-.frow .fl{font-size:10.5px;color:var(--muted-foreground)}
-.frow .fv{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
-.frow .ft{grid-column:1/-1;height:9px;border-radius:999px;background:var(--muted);overflow:hidden}
-.frow .ft i{display:block;height:100%;border-radius:999px;transform-origin:left;transform:scaleX(0);animation:growx var(--cycle) infinite}
-.spark{stroke:var(--primary);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;
-  stroke-dasharray:640;stroke-dashoffset:640;animation:draw var(--cycle) infinite}
+/* The column the card leaves must paint above the one it lands in: every
+   column is its own stacking context (they all carry an entrance transform),
+   so DOM order alone would slide the card UNDER its destination. And no
+   overflow:hidden on .col — that clipped the card the moment it crossed the
+   column edge, and it simply vanished mid-flight. */
+.col.s3{position:relative;z-index:6}
+.cc{border:1px solid var(--border);border-radius:8px;background:var(--card);padding:7px;margin-bottom:5px;box-shadow:0 1px 2px rgba(26,26,26,.05)}
+.cc p{margin:0;font-size:10.5px;font-weight:600;line-height:1.2}
+.cc small{display:block;font-size:8.5px;color:var(--muted-foreground);margin-top:2px}
+.cc .sc{display:inline-block;margin-top:4px;border-radius:5px;background:var(--accent);color:var(--accent-foreground);font-size:8.5px;font-weight:700;padding:1px 5px;font-variant-numeric:tabular-nums}
+.cc .when{display:inline-flex;align-items:center;gap:3px;margin-top:4px;border-radius:5px;background:rgba(217,119,6,.14);color:var(--amber);font-size:8.5px;font-weight:700;padding:1px 5px}
+.cc .when svg{width:9px;height:9px;flex:none}
+.mover{position:relative;z-index:5;--mx:0px;--my:0px;animation:moveover var(--cycle) calc(var(--u)*19.55) infinite}
+.ghost{height:0;margin-bottom:0;padding:0;border:0;box-shadow:none;overflow:hidden;--slot:58px;
+  animation:slotopen var(--cycle) calc(var(--u)*19.55) infinite}
+.slotdate{opacity:0;animation:datein var(--cycle) calc(var(--u)*19.55) infinite}
 
 /* ---------- entrances ----------------------------------------------------- */
 /* One keyframe set, reused everywhere, phase-shifted per element with
-   animation-delay. Each resets at 42% — deep inside the window where its own
-   act is invisible — so the reset is never seen. */
+   animation-delay. Each holds to 43% and resets at 48% — both land while its
+   own act is invisible, so neither is ever seen. */
 .in{opacity:0;animation:risein var(--cycle) infinite both}
+.pop{opacity:0;animation:popin var(--cycle) infinite both}
+.fl{opacity:0;animation:fillin var(--cycle) infinite both}
+.stp{opacity:0;animation:stepin var(--cycle) infinite both}
+/* Two dialog lifetimes: the client and lead forms are on screen for 2.2s, the
+   job form for 3.9s because the AI fills seven fields into it. Both fade the
+   scrim and the sheet together — a dialog that outlived its own act would sit
+   over the next screen. */
+.dlgS{opacity:0;animation:dlgS var(--cycle) infinite both}
+.dlgL{opacity:0;animation:dlgL var(--cycle) infinite both}
+.a3grid{display:grid;grid-template-columns:1fr 292px;gap:12px;align-items:stretch;flex:1;min-height:0}
+.a3grid>.panel{height:100%}
+.a4>.panel{flex:1}
 
 @keyframes risein{
-  0%      {opacity:0;transform:translateY(13px)}
-  4.55%   {opacity:1;transform:none}   /* +1.5s */
-  43%     {opacity:1;transform:none}   /* +14.2s, outlasts its act */
-  48%,100%{opacity:0;transform:translateY(13px)}
+  0%      {opacity:0;transform:translateY(11px)}
+  3.85%   {opacity:1;transform:none}   /* +1.0s */
+  43%     {opacity:1;transform:none}
+  48%,100%{opacity:0;transform:translateY(11px)}
+}
+@keyframes popin{
+  0%      {opacity:0;transform:scale(.94)}
+  2.69%   {opacity:1;transform:none}   /* +0.7s */
+  43%     {opacity:1;transform:none}
+  48%,100%{opacity:0;transform:scale(.94)}
 }
 @keyframes grow{
   0%      {transform:scaleY(0)}
-  6.06%   {transform:scaleY(1)}        /* +2.0s */
+  5.38%   {transform:scaleY(1)}        /* +1.4s */
   43%     {transform:scaleY(1)}
   48%,100%{transform:scaleY(0)}
 }
-@keyframes growx{
-  0%      {transform:scaleX(0)}
-  6.06%   {transform:scaleX(1)}
-  43%     {transform:scaleX(1)}
-  48%,100%{transform:scaleX(0)}
-}
 @keyframes draw{
   0%      {stroke-dashoffset:640}
-  7.58%   {stroke-dashoffset:0}        /* +2.5s */
+  6.15%   {stroke-dashoffset:0}        /* +1.6s */
   43%     {stroke-dashoffset:0}
   48%,100%{stroke-dashoffset:640}
 }
-@keyframes sweep{
-  0%      {stroke-dashoffset:289.03}
-  7.58%   {stroke-dashoffset:109.83}   /* 62% of a r=46 ring */
-  43%     {stroke-dashoffset:109.83}
-  48%,100%{stroke-dashoffset:289.03}
-}
 @keyframes areain{
-  0%{opacity:0} 9.09%{opacity:1} 43%{opacity:1} 48%,100%{opacity:0}
+  0%{opacity:0} 6.92%{opacity:1} 43%{opacity:1} 48%,100%{opacity:0}
 }
 @keyframes dotin{
-  0%{opacity:0;transform:scale(.4)} 3.03%{opacity:1;transform:none}
+  0%{opacity:0;transform:scale(.4)} 2.69%{opacity:1;transform:none}
   43%{opacity:1;transform:none} 48%,100%{opacity:0;transform:scale(.4)}
 }
+/* Each status chip shows for ~0.7s, then hands over to the next. */
+@keyframes stepin{
+  0%      {opacity:0}
+  1.15%   {opacity:1}
+  3.65%   {opacity:1}
+  4.4%,100%{opacity:0}
+}
+/* A field's value arriving in a box that is already there. */
+@keyframes fillin{
+  0%      {opacity:0}
+  1.54%   {opacity:1}                  /* +0.4s */
+  43%     {opacity:1}
+  48%,100%{opacity:0}
+}
+/* A status chip that hands over to the next one: the lead's New and Reviewing
+   both go, Approved is the one that stays. */
+@keyframes stepin{
+  0%      {opacity:0}
+  0.96%   {opacity:1}                  /* +0.25s */
+  3.85%   {opacity:1}                  /* +1.00s */
+  4.81%,100%{opacity:0}                /* +1.25s */
+}
+@keyframes dlgS{
+  0%      {opacity:0}
+  1.54%   {opacity:1}                  /* +0.4s  */
+  10%     {opacity:1}                  /* +2.6s  */
+  11.54%,100%{opacity:0}               /* +3.0s  */
+}
+@keyframes dlgL{
+  0%      {opacity:0}
+  1.54%   {opacity:1}
+  15%     {opacity:1}                  /* +3.9s  */
+  16.54%,100%{opacity:0}               /* +4.3s  */
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
 @keyframes slotopen{
-  0%,16.67%{height:0;margin-bottom:0}         /* +5.5s */
-  19.7%    {height:var(--slot);margin-bottom:6px}
-  43%      {height:var(--slot);margin-bottom:6px}
+  0%,13.46%{height:0;margin-bottom:0}          /* +3.5s */
+  15.77%   {height:var(--slot);margin-bottom:5px}
+  43%      {height:var(--slot);margin-bottom:5px}
   48%,100% {height:0;margin-bottom:0}
 }
+@keyframes datein{
+  0%,15.77%{opacity:0} 17.31%{opacity:1} 43%{opacity:1} 48%,100%{opacity:0}
+}
 @keyframes moveover{
-  0%,15.15%{transform:none;box-shadow:0 1px 2px rgba(26,26,26,.05)}
-  16.67%   {transform:translate(0,-5px) scale(1.04);box-shadow:0 11px 24px -8px rgba(194,65,12,.55)}
-  19.7%    {transform:translate(var(--mx),calc(var(--my) - 4px)) scale(1.04);box-shadow:0 11px 24px -8px rgba(194,65,12,.55)}
-  21.2%    {transform:translate(var(--mx),var(--my)) scale(1);box-shadow:0 1px 2px rgba(26,26,26,.05)}
+  0%,12.31%{transform:none;box-shadow:0 1px 2px rgba(26,26,26,.05)}
+  13.46%   {transform:translate(0,-4px) scale(1.04);box-shadow:0 10px 22px -8px rgba(194,65,12,.55)}
+  15.77%   {transform:translate(var(--mx),calc(var(--my) - 4px)) scale(1.04);box-shadow:0 10px 22px -8px rgba(194,65,12,.55)}
+  16.92%   {transform:translate(var(--mx),var(--my)) scale(1);box-shadow:0 1px 2px rgba(26,26,26,.05)}
   43%      {transform:translate(var(--mx),var(--my))}
   48%,100% {transform:none}
 }
 
-/* ---------- the three cross-dissolves ------------------------------------- */
-/* t=0 sits mid-dissolve, act3 -> act1. 0% and 100% hold identical values for
-   all three layers, so the wrap has nothing to show. Each act also drifts
-   1.015 -> 1 in scale, which reads as a settle rather than a cut. */
+/* ---------- the five cross-dissolves -------------------------------------- */
+/* 0.35s each — fast cuts, because five screens in 26s cannot afford a
+   luxurious fade. t=0 sits mid-dissolve, act5 -> act1: 0% and 100% hold
+   identical values for every layer, so the wrap has nothing to show. */
 @keyframes a1fade{
-  0%      {opacity:0;transform:scale(1.015)}
-  2.46%   {opacity:1;transform:none}   /* 0.8s  */
-  33.33%  {opacity:1;transform:none}   /* 11.0s */
-  35.76%  {opacity:0;transform:scale(.99)}
-  100%    {opacity:0;transform:scale(1.015)}
+  0%        {opacity:0;transform:scale(1.012)}
+  1.346%    {opacity:1;transform:none}
+  18.654%   {opacity:1;transform:none}
+  20%       {opacity:0;transform:scale(.99)}
+  100%      {opacity:0;transform:scale(1.012)}
 }
 @keyframes a2fade{
-  0%,33.33%{opacity:0;transform:scale(1.015)}
-  35.76%   {opacity:1;transform:none}  /* 11.8s */
-  66.67%   {opacity:1;transform:none}  /* 22.0s */
-  69.09%   {opacity:0;transform:scale(.99)}
-  100%     {opacity:0;transform:scale(1.015)}
+  0%,18.654%{opacity:0;transform:scale(1.012)}
+  20%       {opacity:1;transform:none}
+  38.654%   {opacity:1;transform:none}
+  40%       {opacity:0;transform:scale(.99)}
+  100%      {opacity:0;transform:scale(1.012)}
 }
 @keyframes a3fade{
-  0%      {opacity:1;transform:none}
-  2.46%   {opacity:0;transform:scale(.99)}
-  66.67%  {opacity:0;transform:scale(1.015)}
-  69.09%  {opacity:1;transform:none}   /* 22.8s */
-  100%    {opacity:1;transform:none}
+  0%,38.654%{opacity:0;transform:scale(1.012)}
+  40%       {opacity:1;transform:none}
+  58.654%   {opacity:1;transform:none}
+  60%       {opacity:0;transform:scale(.99)}
+  100%      {opacity:0;transform:scale(1.012)}
+}
+@keyframes a4fade{
+  0%,58.654%{opacity:0;transform:scale(1.012)}
+  60%       {opacity:1;transform:none}
+  78.654%   {opacity:1;transform:none}
+  80%       {opacity:0;transform:scale(.99)}
+  100%      {opacity:0;transform:scale(1.012)}
+}
+@keyframes a5fade{
+  0%        {opacity:1;transform:none}
+  1.346%    {opacity:0;transform:scale(.99)}
+  78.654%   {opacity:0;transform:scale(1.012)}
+  80%       {opacity:1;transform:none}
+  100%      {opacity:1;transform:none}
 }
 @keyframes markmove{
-  0%,33.33%{transform:translateY(var(--m1))}
-  35.76%   {transform:translateY(var(--m2))}
-  66.67%   {transform:translateY(var(--m2))}
-  69.09%   {transform:translateY(var(--m3))}
-  100%     {transform:translateY(var(--m3))}
+  0%,18.654%{transform:translateY(var(--m1))}
+  20%       {transform:translateY(var(--m2))}
+  38.654%   {transform:translateY(var(--m2))}
+  40%       {transform:translateY(var(--m3))}
+  58.654%   {transform:translateY(var(--m3))}
+  60%       {transform:translateY(var(--m4))}
+  78.654%   {transform:translateY(var(--m4))}
+  80%       {transform:translateY(var(--m5))}
+  100%      {transform:translateY(var(--m5))}
 }
 
-/* Reduced motion: no loop at all. Hold act 1, fully drawn, and the script
-   parks every odometer on its final value. A decorative infinite loop is
-   exactly what this setting exists to stop. */
+/* Reduced motion: no loop at all. Hold act 1, fully drawn, and the script parks
+   every odometer on its final value. A decorative infinite loop is exactly what
+   this setting exists to stop. */
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none !important;transition:none !important}
   .a1{opacity:1 !important;transform:none !important}
-  .a2,.a3{display:none}
-  .in{opacity:1 !important}
-  .bar,.gbar{transform:scaleY(1) !important}
-  .hrow .bb i,.frow .ft i{transform:scaleX(1) !important}
-  .rline,.spark{stroke-dashoffset:0 !important}
-  .dval{stroke-dashoffset:109.83 !important}
+  .a2,.a3,.a4,.a5{display:none}
+  .in,.pop{opacity:1 !important}
+  .bar{transform:scaleY(1) !important}
+  .rline{stroke-dashoffset:0 !important}
   .rarea,.rdot{opacity:1 !important}
   .sbmark{transform:translateY(var(--m1)) !important}
-  .ghost{height:0 !important}
-  .mover{transform:none !important}
 }
 </style>
 </head>
@@ -404,400 +504,529 @@ body{
 <div class="frame">
 <div class="stage" id="stage">
 
-  <!-- ══ sidebar — both modules on screen at once, which is the pitch ══ -->
+  <!-- ══ sidebar — sidebar-config.ts: the CRM module nav, clientsSection(),
+          and the Recruitment section, all on screen at once ══ -->
   <aside class="sb">
     <div class="brand"><img id="logo" src="data:image/png;base64,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" alt="UFT"></div>
     <nav class="nav">
       <span class="sbmark"></span>
       <h6>CRM</h6>
       <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</a>
-      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m13 2-9 12h7l-1 8 9-12h-7z"/></svg>Leads<span class="cnt">1.2k</span></a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>Leads<span class="cnt">1.2k</span></a>
       <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>Deals<span class="cnt">18</span></a>
-      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1m4 0h1M9 13h1m4 0h1M9 17h1m4 0h1"/></svg>Accounts</a>
-      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>Contacts</a>
-      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Activities</a>
-      <h6>Talent Acquisition</h6>
-      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/></svg>Clients<span class="cnt">12</span></a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Activities</a>
+      <h6>Clients</h6>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/></svg>All Clients<span class="cnt">12</span></a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>Client Employees</a>
+      <h6>Recruitment</h6>
       <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 12v6M9 15h6"/></svg>Job Postings</a>
       <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>Candidate Pipeline</a>
-      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><circle cx="11.5" cy="14.5" r="2.5"/><path d="m13.5 16.5 2 2"/></svg>Resume Review</a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3"><circle cx="12" cy="12" r="9"/></svg>Yellow List</a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6"/></svg>Offer Letters</a>
       <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15v3M12 9v9M17 12v6"/></svg>Reports</a>
     </nav>
   </aside>
 
   <div class="main">
-
-  <!-- ══════════════════ ACT 1 · CRM DASHBOARD · 0.0 – 11.0 ══════════════════
-       Tiles, chart titles and the MoM badge are the panels in
-       src/app/(crm)/crm/dashboard-client.tsx. Stage names are mockPipelineStages. -->
+  <!-- ══════════ ACT 1 · CRM DASHBOARD + REPORT · 0.00 – 5.20 ══════════
+       Tiles and chart titles are the panels in dashboard-client.tsx. The
+       assistant is ChatbotButton.tsx; "Generate my team's report" is one of
+       its real ACCOUNT_MANAGER starter suggestions, and a two-sheet workbook
+       is what its report grid actually hands back. Base delay -0.9s. -->
   <section class="act a1">
     <div class="dhead">
-      <div class="in" style="animation-delay:-1.6s">
+      <div class="in" style="animation-delay:calc(var(--u)*-0.9)">
         <p class="eyebrow">CRM · Dashboard</p>
         <h1>Good morning, Preetam</h1>
         <p class="sub">18 open deals across 87 accounts</p>
       </div>
-      <div class="in segs" style="animation-delay:-1.45s"><b>Today</b><b>This Week</b><b class="on">This Month</b></div>
+      <div class="in segs" style="animation-delay:calc(var(--u)*-0.82)"><b>Today</b><b>This Week</b><b class="on">This Month</b></div>
     </div>
 
     <div class="kpis">
-      <div class="kpi in" style="animation-delay:-1.3s">
+      <div class="kpi in" style="animation-delay:calc(var(--u)*-0.76)">
         <div class="top"><span class="lbl">Total Leads</span>
           <span class="ic" style="background:rgba(124,58,237,.10)"><svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><path d="m13 2-9 12h7l-1 8 9-12h-7z"/></svg></span></div>
-        <b data-to="1284" data-at="0.15" data-comma="1">0</b><small>1,284 in queue</small>
+        <b data-to="1284" data-at="0.05" data-comma="1">0</b><small>1,284 in queue</small>
       </div>
-      <div class="kpi in" style="animation-delay:-1.18s">
+      <div class="kpi in" style="animation-delay:calc(var(--u)*-0.68)">
         <div class="top"><span class="lbl">Open Deals</span>
           <span class="ic" style="background:var(--accent)"><svg viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></span></div>
-        <b data-to="18" data-at="0.2">0</b><small>$630,000 pipeline</small>
+        <b data-to="18" data-at="0.1">0</b><small>$630,000 pipeline</small>
       </div>
-      <div class="kpi in" style="animation-delay:-1.06s">
+      <div class="kpi in" style="animation-delay:calc(var(--u)*-0.6)">
         <div class="top"><span class="lbl">Closed Won</span>
           <span class="ic" style="background:rgba(5,150,105,.10)"><svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span></div>
-        <b data-to="412500" data-at="0.25" data-comma="1" data-pre="$">$0</b><small>23 deals won</small>
+        <b data-to="412500" data-at="0.15" data-comma="1" data-pre="$">$0</b><small>23 deals won</small>
       </div>
-      <div class="kpi in" style="animation-delay:-0.94s">
-        <div class="top"><span class="lbl">Contacts</span>
-          <span class="ic" style="background:rgba(37,99,235,.10)"><svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></span></div>
-        <b data-to="642" data-at="0.3">0</b><small>Across 87 accounts</small>
-      </div>
-      <div class="kpi in" style="animation-delay:-0.82s">
-        <div class="top"><span class="lbl">Accounts</span>
-          <span class="ic" style="background:rgba(217,119,6,.10)"><svg viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></span></div>
-        <b data-to="87" data-at="0.35">0</b><small>Active accounts</small>
-      </div>
-      <div class="kpi in" style="animation-delay:-0.7s">
+      <div class="kpi in" style="animation-delay:calc(var(--u)*-0.52)">
         <div class="top"><span class="lbl">Win Rate</span>
           <span class="ic" style="background:rgba(225,29,72,.10)"><svg viewBox="0 0 24 24" fill="none" stroke="#E11D48" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span></div>
-        <b data-to="62" data-at="0.4" data-suf="%">0%</b><small>Closed Won vs Lost</small>
+        <b data-to="62" data-at="0.2" data-suf="%">0%</b><small>Closed Won vs Lost</small>
       </div>
     </div>
 
     <div class="a1grid">
       <div class="a1left">
-        <!-- Pipeline by Stage — mockPipelineStages, values in $k -->
-        <div class="panel in" style="animation-delay:-0.55s">
+        <div class="panel in" style="animation-delay:calc(var(--u)*-0.44)">
           <div class="ph">
             <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15v3M12 9v9M17 12v6"/></svg></span>Pipeline by Stage</h3>
             <span class="pill">Open: $630,000</span>
           </div>
-          <svg viewBox="0 0 560 196" width="100%" height="196" role="img" aria-label="Deal value by pipeline stage">
-            <line class="gl" x1="46" y1="170" x2="556" y2="170"/>
-            <line class="gl" x1="46" y1="130" x2="556" y2="130"/>
-            <line class="gl" x1="46" y1="90"  x2="556" y2="90"/>
-            <line class="gl" x1="46" y1="50"  x2="556" y2="50"/>
-            <line class="gl" x1="46" y1="10"  x2="556" y2="10"/>
-            <text class="axis" x="40" y="174" text-anchor="end">0</text>
-            <text class="axis" x="40" y="134" text-anchor="end">110</text>
-            <text class="axis" x="40" y="94"  text-anchor="end">220</text>
-            <text class="axis" x="40" y="54"  text-anchor="end">330</text>
-            <text class="axis" x="40" y="14"  text-anchor="end">440</text>
-            <rect class="bar" style="animation-delay:-0.3s"  x="68"  y="135.1" width="58" height="34.9"  rx="4"/>
-            <rect class="bar" style="animation-delay:-0.2s"  x="169" y="118.4" width="58" height="51.6"  rx="4"/>
-            <rect class="bar" style="animation-delay:-0.1s"  x="270" y="90.7"  width="58" height="79.3"  rx="4"/>
-            <rect class="bar" style="animation-delay:0s"  x="371" y="106.7" width="58" height="63.3"  rx="4"/>
-            <rect class="bar won" style="animation-delay:0.1s" x="472" y="20.2" width="58" height="149.8" rx="4"/>
-            <text class="axl" x="97"  y="188" text-anchor="middle">Discovery</text>
-            <text class="axl" x="198" y="188" text-anchor="middle">Demo</text>
-            <text class="axl" x="299" y="188" text-anchor="middle">Proposal</text>
-            <text class="axl" x="400" y="188" text-anchor="middle">Negotiation</text>
-            <text class="axl" x="501" y="188" text-anchor="middle">Closed Won</text>
+          <svg viewBox="0 0 540 166" width="100%" height="166" role="img" aria-label="Deal value by pipeline stage">
+            <line class="gl" x1="42" y1="142" x2="536" y2="142"/>
+            <line class="gl" x1="42" y1="99"  x2="536" y2="99"/>
+            <line class="gl" x1="42" y1="56"  x2="536" y2="56"/>
+            <line class="gl" x1="42" y1="13"  x2="536" y2="13"/>
+            <text class="axis" x="36" y="146" text-anchor="end">0</text>
+            <text class="axis" x="36" y="103" text-anchor="end">147</text>
+            <text class="axis" x="36" y="60"  text-anchor="end">293</text>
+            <text class="axis" x="36" y="17"  text-anchor="end">440</text>
+            <rect class="bar" style="animation-delay:calc(var(--u)*-0.34)" x="62"  y="112.9" width="56" height="29.1"  rx="4"/>
+            <rect class="bar" style="animation-delay:calc(var(--u)*-0.28)" x="160" y="98.9"  width="56" height="43.1"  rx="4"/>
+            <rect class="bar" style="animation-delay:calc(var(--u)*-0.22)" x="258" y="75.8"  width="56" height="66.2"  rx="4"/>
+            <rect class="bar" style="animation-delay:calc(var(--u)*-0.16)" x="356" y="89.2"  width="56" height="52.8"  rx="4"/>
+            <rect class="bar won" style="animation-delay:calc(var(--u)*-0.1)" x="454" y="16.9" width="56" height="125.1" rx="4"/>
+            <text class="axl" x="90"  y="160" text-anchor="middle">Discovery</text>
+            <text class="axl" x="188" y="160" text-anchor="middle">Demo</text>
+            <text class="axl" x="286" y="160" text-anchor="middle">Proposal</text>
+            <text class="axl" x="384" y="160" text-anchor="middle">Negotiation</text>
+            <text class="axl" x="482" y="160" text-anchor="middle">Closed Won</text>
           </svg>
         </div>
 
-        <!-- Revenue Over Time — the +28% MoM badge is derived: (386-301)/301 -->
-        <div class="panel in" style="animation-delay:-0.4s">
+        <div class="panel in" style="animation-delay:calc(var(--u)*-0.36)">
           <div class="ph">
             <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 17 6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></span>Revenue Over Time</h3>
             <span class="delta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17 17 7M8 7h9v9"/></svg>+28% MoM</span>
           </div>
-          <svg viewBox="0 0 560 172" width="100%" height="172" role="img" aria-label="Revenue by month, April to August">
+          <svg viewBox="0 0 540 148" width="100%" height="148" role="img" aria-label="Revenue by month, April to August">
             <defs><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="#C2410C" stop-opacity=".22"/>
               <stop offset="100%" stop-color="#C2410C" stop-opacity="0"/>
             </linearGradient></defs>
-            <line class="gl" x1="46" y1="150" x2="556" y2="150"/>
-            <line class="gl" x1="46" y1="104" x2="556" y2="104"/>
-            <line class="gl" x1="46" y1="58"  x2="556" y2="58"/>
-            <line class="gl" x1="46" y1="12"  x2="556" y2="12"/>
-            <text class="axis" x="40" y="154" text-anchor="end">0</text>
-            <text class="axis" x="40" y="108" text-anchor="end">140</text>
-            <text class="axis" x="40" y="62"  text-anchor="end">280</text>
-            <text class="axis" x="40" y="16"  text-anchor="end">420</text>
-            <path class="rarea" style="animation-delay:0.7s" d="M60 90.2 L178 79.7 L296 61.9 L414 51.1 L532 23.2 L532 150 L60 150 Z"/>
-            <polyline class="rline" style="animation-delay:-0.1s" points="60,90.2 178,79.7 296,61.9 414,51.1 532,23.2"/>
-            <circle class="rdot" style="animation-delay:0.2s" cx="60"  cy="90.2" r="4.5"/>
-            <circle class="rdot" style="animation-delay:0.4s" cx="178" cy="79.7" r="4.5"/>
-            <circle class="rdot" style="animation-delay:0.6s" cx="296" cy="61.9" r="4.5"/>
-            <circle class="rdot" style="animation-delay:0.8s" cx="414" cy="51.1" r="4.5"/>
-            <circle class="rdot" style="animation-delay:1s" cx="532" cy="23.2" r="4.5"/>
-            <text class="axl" x="60"  y="166" text-anchor="middle">Apr</text>
-            <text class="axl" x="178" y="166" text-anchor="middle">May</text>
-            <text class="axl" x="296" y="166" text-anchor="middle">Jun</text>
-            <text class="axl" x="414" y="166" text-anchor="middle">Jul</text>
-            <text class="axl" x="532" y="166" text-anchor="middle">Aug</text>
+            <line class="gl" x1="42" y1="126" x2="536" y2="126"/>
+            <line class="gl" x1="42" y1="88"  x2="536" y2="88"/>
+            <line class="gl" x1="42" y1="50"  x2="536" y2="50"/>
+            <line class="gl" x1="42" y1="12"  x2="536" y2="12"/>
+            <text class="axis" x="36" y="130" text-anchor="end">0</text>
+            <text class="axis" x="36" y="92"  text-anchor="end">140</text>
+            <text class="axis" x="36" y="54"  text-anchor="end">280</text>
+            <text class="axis" x="36" y="16"  text-anchor="end">420</text>
+            <path class="rarea" style="animation-delay:calc(var(--u)*0.05)" d="M58 76.6 L172 67.9 L286 53.2 L400 44.3 L514 21.2 L514 126 L58 126 Z"/>
+            <polyline class="rline" style="animation-delay:calc(var(--u)*-0.3)" points="58,76.6 172,67.9 286,53.2 400,44.3 514,21.2"/>
+            <circle class="rdot" style="animation-delay:calc(var(--u)*-0.1)" cx="58"  cy="76.6" r="4.2"/>
+            <circle class="rdot" style="animation-delay:calc(var(--u)*0)"    cx="172" cy="67.9" r="4.2"/>
+            <circle class="rdot" style="animation-delay:calc(var(--u)*0.1)"  cx="286" cy="53.2" r="4.2"/>
+            <circle class="rdot" style="animation-delay:calc(var(--u)*0.2)"  cx="400" cy="44.3" r="4.2"/>
+            <circle class="rdot" style="animation-delay:calc(var(--u)*0.3)"  cx="514" cy="21.2" r="4.2"/>
+            <text class="axl" x="58"  y="143" text-anchor="middle">Apr</text>
+            <text class="axl" x="172" y="143" text-anchor="middle">May</text>
+            <text class="axl" x="286" y="143" text-anchor="middle">Jun</text>
+            <text class="axl" x="400" y="143" text-anchor="middle">Jul</text>
+            <text class="axl" x="514" y="143" text-anchor="middle">Aug</text>
           </svg>
         </div>
       </div>
 
-      <div class="a1right">
-        <!-- Win Rate donut. 23 won / 37 decided = 62%. -->
-        <div class="panel in" style="animation-delay:-0.25s">
-          <div class="ph"><h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>Win Rate</h3></div>
-          <div class="dwrap">
-            <svg class="donut" viewBox="0 0 120 120" width="150" height="150" role="img" aria-label="Win rate 62 percent">
-              <circle class="dtrack" cx="60" cy="60" r="46"/>
-              <circle class="dval" style="animation-delay:0s" cx="60" cy="60" r="46"/>
-            </svg>
-            <div class="dcen">
-              <b data-to="62" data-at="0.5" data-suf="%">0%</b>
-              <span>23 won / 14 lost</span>
-            </div>
+      <!-- The assistant. One turn: ask for today's report, get the real file. -->
+      <div class="chat in" style="animation-delay:calc(var(--u)*-0.28)">
+        <div class="chath">
+          <span class="av"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15v4M17 17h4"/></svg></span>
+          <div><b>UFT Assistant</b><small>Portal help · reports · team</small></div>
+        </div>
+        <div class="chatb">
+          <div class="mu pop" style="animation-delay:calc(var(--u)*0.5)">Get today's report for my team</div>
+          <div class="ma pop" style="animation-delay:calc(var(--u)*1.5)">
+            <span class="sp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15v4M17 17h4"/></svg></span>
+            <span class="bub">Done — <b>3 Sep 2026</b>, your four scouts.<br>Two sheets: the per-scout summary, and the 22 candidates behind it.</span>
+          </div>
+          <div class="rcard pop" style="animation-delay:calc(var(--u)*2.3)">
+            <div class="rh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>report_260903_0914.xlsx</div>
+            <div class="rt"><i class="on">Scout Summary</i><i>Pipeline Candidates</i></div>
+            <table class="rgrid">
+              <thead><tr><th>Scout</th><th>CV Views</th><th>Subs</th><th>Joined</th></tr></thead>
+              <tbody>
+                <tr><td>Preetam R.</td><td>386</td><td>14</td><td>2</td></tr>
+                <tr><td>Divya S.</td><td>301</td><td>11</td><td>2</td></tr>
+                <tr><td>Anil K.</td><td>244</td><td>8</td><td>1</td></tr>
+                <tr><td>Total</td><td>931</td><td>33</td><td>5</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
-
-        <!-- Deal Count by Stage — the open stages only, summing to Open Deals 18 -->
-        <div class="panel in" style="animation-delay:-0.1s">
-          <div class="ph"><h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M7 12h10M10 18h4"/></svg></span>Deal Count by Stage</h3></div>
-          <div class="hrows">
-            <div class="hrow"><span class="nm">Discovery</span><span class="bb"><i style="width:100%;animation-delay:0.2s"></i></span><span class="v">5</span></div>
-            <div class="hrow"><span class="nm">Demo</span><span class="bb"><i style="width:80%;animation-delay:0.3s"></i></span><span class="v">4</span></div>
-            <div class="hrow"><span class="nm">Proposal</span><span class="bb"><i style="width:100%;animation-delay:0.4s"></i></span><span class="v">5</span></div>
-            <div class="hrow"><span class="nm">Negotiation</span><span class="bb"><i style="width:80%;animation-delay:0.5s"></i></span><span class="v">4</span></div>
-          </div>
+        <div class="chatin in" style="animation-delay:calc(var(--u)*-0.2)">Ask about reports, your team, or the portal
+          <span class="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4z"/></svg></span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═════════════ ACT 2 · CLIENT OVERVIEW · 11.0 – 22.0 ═════════════════════
-       Header, HM cards and the jobs table columns are
-       src/app/(internal)/dashboard/client/[clientId]/page.tsx verbatim.
-       Northwind Retail is a client from TA-Report.html; its Senior React
-       Developer job is the pipeline act 3 opens. Base delay 11s. -->
+  <!-- ══════════ ACT 2 · ALL CLIENTS + CREATE · 5.20 – 10.40 ══════════
+       ClientsPage.tsx: the "Clients / All Clients" header, the search box, and
+       cards grouped IT / Non-IT carrying "N jobs · N placed · N contacts".
+       The dialog is CreateClientDialog.tsx, field for field, with its own
+       placeholders. Base 3.95s. -->
   <section class="act a2">
     <div class="dhead">
-      <div class="in" style="animation-delay:9.4s">
-        <p class="eyebrow">Client Overview</p>
-        <h1>Northwind Retail</h1>
-        <p class="sub">Retail &amp; E-commerce<span class="badge it">IT</span>Added by Preetam R.</p>
-      </div>
-      <div class="in segs" style="animation-delay:9.55s"><b>Today</b><b>This Week</b><b class="on">This Month</b></div>
-    </div>
-
-    <div class="hmcards">
-      <div class="hmcard in" style="animation-delay:9.7s">
-        <div class="hmid"><span class="hmav">K</span>
-          <div><p>Kavya S.</p><small>Head of Talent</small><em>kavya.s@northwind.example</em></div></div>
-        <div class="hmstats">
-          <div><b data-to="1" data-at="10.4">0</b><span>Jobs</span></div>
-          <div><b data-to="1" data-at="10.45">0</b><span>Active</span></div>
-          <div><b data-to="11" data-at="10.5">0</b><span>Cand.</span></div>
-          <div><b data-to="1" data-at="10.55">0</b><span>Offered</span></div>
-          <div><b data-to="1" data-at="10.6">0</b><span>Joined</span></div>
-        </div>
-      </div>
-      <div class="hmcard in" style="animation-delay:9.85s">
-        <div class="hmid"><span class="hmav">A</span>
-          <div><p>Arjun Menon</p><small>Store Operations Lead</small><em>arjun.menon@northwind.example</em></div></div>
-        <div class="hmstats">
-          <div><b data-to="1" data-at="10.55">0</b><span>Jobs</span></div>
-          <div><b data-to="1" data-at="10.6">0</b><span>Active</span></div>
-          <div><b data-to="5" data-at="10.65">0</b><span>Cand.</span></div>
-          <div><b data-to="1" data-at="10.7">0</b><span>Offered</span></div>
-          <div><b data-to="1" data-at="10.75">0</b><span>Joined</span></div>
-        </div>
-      </div>
-      <div class="hmcard in" style="animation-delay:10s">
-        <div class="hmid"><span class="hmav">S</span>
-          <div><p>Sneha Rao</p><small>Brand &amp; Merchandising</small><em>sneha.rao@northwind.example</em></div></div>
-        <div class="hmstats">
-          <div><b data-to="1" data-at="10.7">0</b><span>Jobs</span></div>
-          <div><b data-to="1" data-at="10.75">0</b><span>Active</span></div>
-          <div><b data-to="3" data-at="10.8">0</b><span>Cand.</span></div>
-          <div><b data-to="1" data-at="10.85">0</b><span>Offered</span></div>
-          <div><b data-to="0" data-at="10.9">0</b><span>Joined</span></div>
-        </div>
+      <div class="in" style="animation-delay:calc(var(--u)*3.95)">
+        <p class="eyebrow">Clients</p>
+        <h1>All Clients</h1>
       </div>
     </div>
 
-    <div class="a2grid">
-      <!-- Applied 11 + 5 + 3 = 19; Joined 1 + 1 + 0 = 2. The HM cards above
-           are the same three rows grouped by manager. -->
-      <div class="panel in" style="animation-delay:10.15s">
-        <div class="ph">
-          <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>All Jobs</h3>
-          <span class="pill">3 total · 19 applied</span>
+    <div class="toolbar in" style="animation-delay:calc(var(--u)*4.03)">
+      <span class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search clients…</span>
+      <span class="btnp sp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Create Client</span>
+    </div>
+
+    <div class="cglabel in" style="animation-delay:calc(var(--u)*4.11)"><span class="tag it">IT</span><span>7 clients</span></div>
+    <div class="clist">
+      <div class="ccard fresh pop" style="animation-delay:calc(var(--u)*7.9)">
+        <span class="sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></span>
+        <span class="bd"><span class="cat">IT</span><p>Contoso Systems</p><span class="meta">IT Services · Bangalore</span><span class="nums">0 jobs · 0 placed · 0 contacts</span></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="ccard in" style="animation-delay:calc(var(--u)*4.19)">
+        <span class="sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></span>
+        <span class="bd"><span class="cat">IT</span><p>Northwind Retail</p><span class="meta">Retail &amp; E-commerce · Bangalore</span><span class="nums">3 jobs · 2 placed · 3 contacts</span></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="ccard in" style="animation-delay:calc(var(--u)*4.25)">
+        <span class="sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></span>
+        <span class="bd"><span class="cat">IT</span><p>Fabrikam Labs</p><span class="meta">Product Engineering · Pune</span><span class="nums">5 jobs · 1 placed · 2 contacts</span></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="ccard in" style="animation-delay:calc(var(--u)*4.31)">
+        <span class="sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></span>
+        <span class="bd"><span class="cat">IT</span><p>Woodgrove Systems</p><span class="meta">Banking Tech · Mumbai</span><span class="nums">6 jobs · 4 placed · 2 contacts</span></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="ccard in" style="animation-delay:calc(var(--u)*4.37)">
+        <span class="sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></span>
+        <span class="bd"><span class="cat">IT</span><p>Proseware Digital</p><span class="meta">Digital Agency · Hyderabad</span><span class="nums">2 jobs · 1 placed · 1 contact</span></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="ccard in" style="animation-delay:calc(var(--u)*4.43)">
+        <span class="sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></span>
+        <span class="bd"><span class="cat">IT</span><p>Trey Analytics</p><span class="meta">Data &amp; Analytics · Bangalore</span><span class="nums">4 jobs · 2 placed · 2 contacts</span></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="ccard in" style="animation-delay:calc(var(--u)*4.49)">
+        <span class="sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></span>
+        <span class="bd"><span class="cat">IT</span><p>Wingtip Cloud</p><span class="meta">Cloud Infrastructure · Chennai</span><span class="nums">3 jobs · 0 placed · 1 contact</span></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+    </div>
+
+    <div class="cglabel in" style="animation-delay:calc(var(--u)*4.55)"><span class="tag nit">Non-IT</span><span>5 clients</span></div>
+    <div class="clist">
+      <div class="ccard in" style="animation-delay:calc(var(--u)*4.61)">
+        <span class="sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></span>
+        <span class="bd"><span class="cat">Non-IT</span><p>Adventure Works</p><span class="meta">Logistics · Chennai</span><span class="nums">7 jobs · 2 placed · 2 contacts</span></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="ccard in" style="animation-delay:calc(var(--u)*4.67)">
+        <span class="sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></span>
+        <span class="bd"><span class="cat">Non-IT</span><p>Tailspin Traders</p><span class="meta">Manufacturing · Coimbatore</span><span class="nums">4 jobs · 3 placed · 1 contact</span></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="ccard in" style="animation-delay:calc(var(--u)*4.73)">
+        <span class="sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></span>
+        <span class="bd"><span class="cat">Non-IT</span><p>Litware Hospitality</p><span class="meta">Hospitality · Goa</span><span class="nums">2 jobs · 1 placed · 1 contact</span></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="ccard in" style="animation-delay:calc(var(--u)*4.79)">
+        <span class="sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></span>
+        <span class="bd"><span class="cat">Non-IT</span><p>Graphic Design Institute</p><span class="meta">Education · Pune</span><span class="nums">3 jobs · 2 placed · 1 contact</span></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="ccard in" style="animation-delay:calc(var(--u)*4.85)">
+        <span class="sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg></span>
+        <span class="bd"><span class="cat">Non-IT</span><p>Coho Logistics</p><span class="meta">Warehousing · Nagpur</span><span class="nums">1 job · 0 placed · 1 contact</span></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+    </div>
+
+    <div class="scrim dlgS" style="animation-delay:calc(var(--u)*5.4)">
+      <div class="dlg">
+        <div class="dlgh"><h4>Create Client</h4><p>Add a company you recruit for.</p></div>
+        <div class="dlgb">
+          <div class="fld"><label>Client type</label>
+            <div class="radio"><b class="on">IT</b><b>Non-IT</b></div>
+          </div>
+          <div class="fld"><label>Company Name <span class="star">*</span></label>
+            <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*6.0)">Contoso Systems</span></div></div>
+          <div class="two">
+            <div class="fld"><label>Industry</label>
+              <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*6.3)">IT Services</span></div></div>
+            <div class="fld"><label>Address / City</label>
+              <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*6.6)">Bangalore</span></div></div>
+          </div>
+          <div class="fld"><label>Website</label>
+            <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*6.9)">https://contoso.example<i class="car"></i></span></div></div>
         </div>
-        <table class="jt">
-          <thead><tr>
-            <th>Job</th><th>Hiring Manager</th><th class="n">Applied</th><th class="n">Offered</th>
-            <th class="n">Selected</th><th class="n">Rejected</th><th class="n">Joined</th>
-          </tr></thead>
+        <div class="dlgf"><span class="btno">Cancel</span><span class="btnp">Create Client</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ ACT 3 · LEADS + ADD + LADDER · 10.40 – 15.60 ══════════
+       leads/page.tsx: the table, sourceLabels ("Web Form" for inbound_web),
+       and the status ladder new -> reviewing -> approved with its own icons
+       and colours. The panel on the right is RESPONSE_CATEGORIES — Cold /
+       Neutral / Warm / Move Forward. Base 9.15s. -->
+  <section class="act a3">
+    <div class="dhead">
+      <div class="in" style="animation-delay:calc(var(--u)*9.15)">
+        <p class="eyebrow">CRM · Leads</p>
+        <h1>Leads</h1>
+        <p class="sub">1,284 in queue · 38 added this week</p>
+      </div>
+      <div class="in segs" style="animation-delay:calc(var(--u)*9.23)"><b>All</b><b class="on">New</b><b>Reviewing</b><b>Approved</b></div>
+    </div>
+
+    <div class="toolbar in" style="animation-delay:calc(var(--u)*9.31)">
+      <span class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search leads…</span>
+      <span class="btnp sp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Add Lead</span>
+    </div>
+
+    <div class="a3grid">
+      <div class="panel in" style="animation-delay:calc(var(--u)*9.39)">
+        <table class="lt">
+          <thead><tr><th>Name</th><th>Company</th><th>Source</th><th>Status</th></tr></thead>
           <tbody>
-            <tr class="in" style="animation-delay:10.6s">
-              <td><span class="jname">Senior React Developer</span><span class="jref">REQ-2041</span><span class="badge" style="background:#D1FAE5;color:#047857">Active</span></td>
-              <td style="color:var(--muted-foreground)">Kavya S.</td>
-              <td class="n"><span class="chip b">11</span></td><td class="n"><span class="chip v">1</span></td>
-              <td class="n"><span class="chip g">1</span></td><td class="n"><span class="chip r">3</span></td>
-              <td class="n"><span class="chip g">1</span></td>
+            <tr class="pop" style="animation-delay:calc(var(--u)*12.6)">
+              <td><span class="nm">Ritu Agarwal</span><span class="em">ritu.agarwal@contoso.example</span></td>
+              <td>Contoso Systems</td>
+              <td class="src">Web Form</td>
+              <td>
+                <span class="stx">
+                  <span class="stp" style="animation-delay:calc(var(--u)*12.7)"><span class="st new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>New</span></span>
+                  <span class="stp" style="animation-delay:calc(var(--u)*13.45)"><span class="st rev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Reviewing</span></span>
+                  <span class="fl" style="animation-delay:calc(var(--u)*14.2)"><span class="st app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>Approved</span></span>
+                </span>
+              </td>
             </tr>
-            <tr class="in" style="animation-delay:10.75s">
-              <td><span class="jname">Store Operations Analyst</span><span class="jref">REQ-2058</span><span class="badge" style="background:#D1FAE5;color:#047857">Active</span></td>
-              <td style="color:var(--muted-foreground)">Arjun Menon</td>
-              <td class="n"><span class="chip b">5</span></td><td class="n"><span class="chip v">1</span></td>
-              <td class="n"><span class="chip g">1</span></td><td class="n"><span class="chip r">2</span></td>
-              <td class="n"><span class="chip g">1</span></td>
+            <tr class="in" style="animation-delay:calc(var(--u)*9.47)">
+              <td><span class="nm">James Carter</span><span class="em">james.carter@techwave.example</span></td>
+              <td>TechWave Inc.</td><td class="src">Apify / LinkedIn</td>
+              <td><span class="st rev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Reviewing</span></td>
             </tr>
-            <tr class="in" style="animation-delay:10.9s">
-              <td><span class="jname">Visual Merchandiser</span><span class="jref">REQ-2063</span><span class="badge" style="background:#D1FAE5;color:#047857">Active</span></td>
-              <td style="color:var(--muted-foreground)">Sneha Rao</td>
-              <td class="n"><span class="chip b">3</span></td><td class="n"><span class="chip v">1</span></td>
-              <td class="n"><span class="chip g">0</span></td><td class="n"><span class="chip r">1</span></td>
-              <td class="n"><span class="chip g">0</span></td>
+            <tr class="in" style="animation-delay:calc(var(--u)*9.55)">
+              <td><span class="nm">Priya Nair</span><span class="em">priya.nair@cloudbase.example</span></td>
+              <td>CloudBase Ltd.</td><td class="src">Business Card</td>
+              <td><span class="st app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>Approved</span></td>
+            </tr>
+            <tr class="in" style="animation-delay:calc(var(--u)*9.63)">
+              <td><span class="nm">Marcus Webb</span><span class="em">marcus.webb@finsolve.example</span></td>
+              <td>FinSolve</td><td class="src">Web Form</td>
+              <td><span class="st new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>New</span></td>
+            </tr>
+            <tr class="in" style="animation-delay:calc(var(--u)*9.71)">
+              <td><span class="nm">Daniel Kim</span><span class="em">daniel.kim@vertexdata.example</span></td>
+              <td>Vertex Data</td><td class="src">Apify / LinkedIn</td>
+              <td><span class="st new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>New</span></td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div class="a2rail">
-      <!-- Submissions vs joins, the weekly shape the TA reports carry -->
-        <div class="panel in" style="animation-delay:10.3s">
-          <div class="ph"><h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15v3M12 9v9M17 12v6"/></svg></span>Submissions vs Joins</h3></div>
-          <svg viewBox="0 0 280 168" width="100%" height="168" role="img" aria-label="Submissions and joins over six weeks">
-            <line class="gl" x1="26" y1="140" x2="276" y2="140"/>
-            <line class="gl" x1="26" y1="96"  x2="276" y2="96"/>
-            <line class="gl" x1="26" y1="52"  x2="276" y2="52"/>
-            <line class="gl" x1="26" y1="8"   x2="276" y2="8"/>
-            <text class="axis" x="21" y="144" text-anchor="end">0</text>
-            <text class="axis" x="21" y="100" text-anchor="end">4</text>
-            <text class="axis" x="21" y="56"  text-anchor="end">8</text>
-            <text class="axis" x="21" y="12"  text-anchor="end">12</text>
-            <g>
-              <rect class="gbar sub"  style="animation-delay:10.7s"  x="34"  y="74"  width="12" height="66" rx="3"/>
-              <rect class="gbar join" style="animation-delay:10.82s" x="48"  y="129" width="12" height="11" rx="3"/>
-              <rect class="gbar sub"  style="animation-delay:10.76s" x="75"  y="52"  width="12" height="88" rx="3"/>
-              <rect class="gbar join" style="animation-delay:10.88s" x="89"  y="118" width="12" height="22" rx="3"/>
-              <rect class="gbar sub"  style="animation-delay:10.82s" x="116" y="85"  width="12" height="55" rx="3"/>
-              <rect class="gbar join" style="animation-delay:10.94s" x="130" y="129" width="12" height="11" rx="3"/>
-              <rect class="gbar sub"  style="animation-delay:10.88s" x="157" y="41"  width="12" height="99" rx="3"/>
-              <rect class="gbar join" style="animation-delay:11s"  x="171" y="118" width="12" height="22" rx="3"/>
-              <rect class="gbar sub"  style="animation-delay:10.94s" x="198" y="63"  width="12" height="77" rx="3"/>
-              <rect class="gbar join" style="animation-delay:11.06s" x="212" y="129" width="12" height="11" rx="3"/>
-              <rect class="gbar sub"  style="animation-delay:11s"  x="239" y="19"  width="12" height="121" rx="3"/>
-              <rect class="gbar join" style="animation-delay:11.12s" x="253" y="107" width="12" height="33" rx="3"/>
-            </g>
-            <text class="axl" x="47"  y="158" text-anchor="middle">W30</text>
-            <text class="axl" x="88"  y="158" text-anchor="middle">W31</text>
-            <text class="axl" x="129" y="158" text-anchor="middle">W32</text>
-            <text class="axl" x="170" y="158" text-anchor="middle">W33</text>
-            <text class="axl" x="211" y="158" text-anchor="middle">W34</text>
-            <text class="axl" x="252" y="158" text-anchor="middle">W35</text>
-          </svg>
-          <div class="lgd" style="margin-top:10px">
-            <span><i style="background:var(--violet)"></i>Submissions</span>
-            <span><i style="background:var(--emerald)"></i>Joins</span>
-          </div>
+      <div class="panel in" style="animation-delay:calc(var(--u)*9.47)">
+        <div class="ph"><h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M7 12h10M10 18h4"/></svg></span>Response</h3></div>
+        <div class="ladder">
+          <b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>Cold</b>
+          <b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Neutral</b>
+          <b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>Warm</b>
+          <span class="fl" style="animation-delay:calc(var(--u)*14.4)"><b class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>Move Forward</b></span>
         </div>
+        <p style="margin:13px 0 0;font-size:11px;color:var(--muted-foreground);line-height:1.5">
+          Logged against the lead, with the follow-up date the category implies. Approved leads convert to an account, a contact and a deal at <b>Discovery</b>.
+        </p>
+      </div>
+    </div>
 
-        <!-- Sums to the 19 applied in the table; the Senior React Developer
-             share of each row is exactly the kanban act 3 opens on. -->
-        <div class="panel in" style="animation-delay:10.45s">
-          <div class="ph"><h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M7 12h10M10 18h4"/></svg></span>Pipeline by Stage</h3>
-            <span class="pill">19 live</span></div>
-          <div class="hrows">
-            <div class="hrow"><span class="nm">Screening</span><span class="bb"><i style="width:100%;animation-delay:10.9s"></i></span><span class="v">6</span></div>
-            <div class="hrow"><span class="nm">Internal Int.</span><span class="bb"><i style="width:50%;animation-delay:10.98s"></i></span><span class="v">3</span></div>
-            <div class="hrow"><span class="nm">Client Sub.</span><span class="bb"><i style="width:50%;animation-delay:11.06s"></i></span><span class="v">3</span></div>
-            <div class="hrow"><span class="nm">Client Int.</span><span class="bb"><i style="width:33%;animation-delay:11.14s"></i></span><span class="v">2</span></div>
-            <div class="hrow"><span class="nm">Shortlisted</span><span class="bb"><i style="width:50%;animation-delay:11.22s"></i></span><span class="v">3</span></div>
-            <div class="hrow"><span class="nm">Joined</span><span class="bb"><i style="width:33%;animation-delay:11.3s"></i></span><span class="v">2</span></div>
+    <div class="scrim dlgS" style="animation-delay:calc(var(--u)*10.2)">
+      <div class="dlg">
+        <div class="dlgh"><h4>Add Lead</h4><p>Source: Web Form</p></div>
+        <div class="dlgb">
+          <div class="two">
+            <div class="fld"><label>First Name <span class="star">*</span></label>
+              <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*10.75)">Ritu</span></div></div>
+            <div class="fld"><label>Last Name</label>
+              <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*10.95)">Agarwal</span></div></div>
+          </div>
+          <div class="fld"><label>Email <span class="star">*</span></label>
+            <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*11.15)">ritu.agarwal@contoso.example</span></div></div>
+          <div class="two">
+            <div class="fld"><label>Company</label>
+              <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*11.35)">Contoso Systems</span></div></div>
+            <div class="fld"><label>Job Title</label>
+              <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*11.55)">VP Engineering<i class="car"></i></span></div></div>
           </div>
         </div>
+        <div class="dlgf"><span class="btno">Cancel</span><span class="btnp">Save Lead</span></div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════ ACT 3 · CANDIDATE PIPELINE · 22.0 – 33.0 ════════════════════
-       Column names are STAGE_LABEL from src/lib/chatbot/query-tools.ts.
-       11 candidates — the same eleven as Candidate-Chat.html — and the card
-       that moves is the move the assistant makes there. Base delay 22s. -->
-  <section class="act a3">
+  <!-- ══════════ ACT 4 · JOB POSTINGS + AI FORM · 15.60 – 20.80 ══════════
+       The posting form: one sentence in, and Title / Location / Type / Open
+       Positions / Posting Duration / Primary Skills / Description come back
+       filled, each carrying its AI tag. The job created here is REQ-2041,
+       the one act 5 then staffs. Base 14.35s. -->
+  <section class="act a4">
     <div class="dhead">
-      <div class="in" style="animation-delay:20.4s">
-        <p class="eyebrow">Candidate Pipeline</p>
-        <h1>Senior React Developer</h1>
-        <p class="sub">Northwind Retail · REQ-2041 · Kavya S.<span class="badge it">IT</span></p>
+      <div class="in" style="animation-delay:calc(var(--u)*14.35)">
+        <p class="eyebrow">Recruitment · Job Postings</p>
+        <h1>Job Postings</h1>
+        <p class="sub">14 active · 3 drafts</p>
       </div>
-      <div class="in segs" style="animation-delay:20.55s"><b>All Scouts</b><b class="on">My Team</b></div>
+      <div class="in segs" style="animation-delay:calc(var(--u)*14.43)"><b class="on">Active</b><b>Draft</b><b>Closed</b></div>
     </div>
 
-    <div class="a3grid">
+    <div class="toolbar in" style="animation-delay:calc(var(--u)*14.51)">
+      <span class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search postings…</span>
+      <span class="btnp sp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>New Posting</span>
+    </div>
+
+    <div class="panel in" style="animation-delay:calc(var(--u)*14.59)">
+      <table class="jt">
+        <thead><tr><th>Ref</th><th>Job Title</th><th>Client</th><th>Type</th><th>Location</th><th class="n">Open</th><th class="n">Applied</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr class="pop" style="animation-delay:calc(var(--u)*18.9)">
+            <td class="ref">REQ-2041</td><td><b>Senior React Developer</b></td><td>Northwind Retail</td>
+            <td>Full Time</td><td>Bengaluru</td><td class="n">3</td><td class="n">0</td>
+            <td><span class="badge ok">Active</span></td>
+          </tr>
+          <tr class="in" style="animation-delay:calc(var(--u)*14.67)">
+            <td class="ref">REQ-2038</td><td><b>Backend Engineer — Go</b></td><td>Contoso Systems</td>
+            <td>Full Time</td><td>Pune</td><td class="n">2</td><td class="n">41</td>
+            <td><span class="badge ok">Active</span></td>
+          </tr>
+          <tr class="in" style="animation-delay:calc(var(--u)*14.75)">
+            <td class="ref">REQ-2032</td><td><b>QA Automation Engineer</b></td><td>Fabrikam Labs</td>
+            <td>Contract</td><td>Pune</td><td class="n">4</td><td class="n">62</td>
+            <td><span class="badge ok">Active</span></td>
+          </tr>
+          <tr class="in" style="animation-delay:calc(var(--u)*14.83)">
+            <td class="ref">REQ-2027</td><td><b>DevOps Engineer</b></td><td>Adventure Works</td>
+            <td>Full Time</td><td>Chennai</td><td class="n">1</td><td class="n">28</td>
+            <td><span class="badge ok">Active</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="scrim dlgL" style="animation-delay:calc(var(--u)*15.0)">
+      <div class="dlg wide">
+        <div class="dlgh"><h4>New Job Posting</h4><p>Describe the role in one sentence. The rest is generated.</p></div>
+        <div class="dlgb">
+          <div class="fld"><label>Describe the role</label>
+            <div class="inp area"><span class="fl" style="animation-delay:calc(var(--u)*15.9)">Need a senior React developer in Bangalore, hybrid, 5+ years, 3 openings for Northwind Retail<i class="car"></i></span></div></div>
+          <div style="display:flex;justify-content:flex-end">
+            <span class="btnp"><span class="spin"></span>Generate with AI</span>
+          </div>
+          <div class="two">
+            <div class="fld"><label>Title <span class="star">*</span><span class="aitag fl" style="animation-delay:calc(var(--u)*16.9)">AI</span></label>
+              <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*16.9)">Senior React Developer</span></div></div>
+            <div class="fld"><label>Location <span class="star">*</span><span class="aitag fl" style="animation-delay:calc(var(--u)*17.1)">AI</span></label>
+              <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*17.1)">Bengaluru · Hybrid</span></div></div>
+          </div>
+          <div class="three">
+            <div class="fld"><label>Type <span class="star">*</span><span class="aitag fl" style="animation-delay:calc(var(--u)*17.3)">AI</span></label>
+              <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*17.3)">Full Time</span></div></div>
+            <div class="fld"><label>Open Positions <span class="star">*</span><span class="aitag fl" style="animation-delay:calc(var(--u)*17.5)">AI</span></label>
+              <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*17.5)">3</span></div></div>
+            <div class="fld"><label>Posting Duration <span class="star">*</span><span class="aitag fl" style="animation-delay:calc(var(--u)*17.7)">AI</span></label>
+              <div class="inp"><span class="fl" style="animation-delay:calc(var(--u)*17.7)">30 days</span></div></div>
+          </div>
+          <div class="fld"><label>Primary Skills <span class="star">*</span><span class="aitag fl" style="animation-delay:calc(var(--u)*17.9)">AI</span></label>
+            <div class="chips">
+              <b class="fl" style="animation-delay:calc(var(--u)*17.9)">React</b>
+              <b class="fl" style="animation-delay:calc(var(--u)*18.0)">TypeScript</b>
+              <b class="fl" style="animation-delay:calc(var(--u)*18.1)">Redux</b>
+              <b class="fl" style="animation-delay:calc(var(--u)*18.2)">Next.js</b>
+              <b class="fl" style="animation-delay:calc(var(--u)*18.3)">REST APIs</b>
+            </div>
+          </div>
+        </div>
+        <div class="dlgf"><span class="btno">Save Draft</span><span class="btnp">Post Job</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ ACT 5 · CANDIDATE PIPELINE · 20.80 – 26.00 ══════════
+       Columns are STAGE_LABEL from src/lib/chatbot/query-tools.ts. The
+       assistant refuses to move anyone into Client Interview without a
+       date/time — that is the rule at its line 188, and it is why the second
+       turn exists. The move that follows is the real one. Base 19.55s. -->
+  <section class="act a5">
+    <div class="dhead">
+      <div class="in" style="animation-delay:calc(var(--u)*19.55)">
+        <p class="eyebrow">Recruitment · Candidate Pipeline</p>
+        <h1>Senior React Developer</h1>
+        <p class="sub">Northwind Retail · REQ-2041<span class="badge it">IT</span></p>
+      </div>
+      <div class="in segs" style="animation-delay:calc(var(--u)*19.63)"><b>All Scouts</b><b class="on">My Team</b></div>
+    </div>
+
+    <div class="a5grid">
       <div class="kanban">
-        <div class="col s1 in" style="animation-delay:20.7s">
+        <div class="col s1 in" style="animation-delay:calc(var(--u)*19.71)">
           <div class="colh"><p>Screening</p><span class="cn">3</span></div>
           <div class="cc"><p>Nikhil Bose</p><small>4.2y · React, TS</small><span class="sc">71%</span></div>
           <div class="cc"><p>Aparna Iyer</p><small>3.1y · React, Redux</small><span class="sc">68%</span></div>
           <div class="cc"><p>Rafi Ahmed</p><small>5.0y · React, Node</small><span class="sc">74%</span></div>
         </div>
-        <div class="col s2 in" style="animation-delay:20.8s">
+        <div class="col s2 in" style="animation-delay:calc(var(--u)*19.77)">
           <div class="colh"><p>Internal Interview</p><span class="cn">2</span></div>
           <div class="cc"><p>Sandhya Rao</p><small>6.4y · React, GraphQL</small><span class="sc">88%</span></div>
           <div class="cc"><p>Deepa Kulkarni</p><small>5.7y · React, AWS</small><span class="sc">82%</span></div>
         </div>
-        <div class="col s3 in" style="animation-delay:20.9s">
-          <div class="colh"><p>Client Submission</p><span class="cn">2</span></div>
-          <div class="cc"><p>Vivek Menon</p><small>7.1y · React, Next.js</small><span class="sc">91%</span></div>
+        <div class="col s3 in" style="animation-delay:calc(var(--u)*19.83)">
+          <div class="colh"><p>Client Submission</p><span class="cn" data-to="1" data-from="2" data-at="24.3" data-dur="0.4">2</span></div>
+          <div class="cc mover"><p>Vivek Menon</p><small>7.1y · React, Next.js</small><span class="sc">91%</span><span class="when slotdate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Thu 5 Sep · 4:00 PM</span></div>
           <div class="cc"><p>Tanvi Chauhan</p><small>4.9y · React, TS</small><span class="sc">79%</span></div>
         </div>
-        <div class="col s4 in" style="animation-delay:21s">
-          <div class="colh"><p>Client Interview</p><span class="cn" data-to="1" data-from="2" data-at="26.7" data-dur="0.5">2</span></div>
-          <div class="cc mover"><p>Nisha Pillai</p><small>6.0y · React, Testing</small><span class="sc">86%</span></div>
+        <div class="col s4 in" style="animation-delay:calc(var(--u)*19.89)">
+          <div class="colh"><p>Client Interview</p><span class="cn" data-to="2" data-from="1" data-at="24.3" data-dur="0.4">1</span></div>
+          <div class="cc ghost"></div>
           <div class="cc"><p>Farhan Ali</p><small>5.3y · React, CI/CD</small><span class="sc">80%</span></div>
         </div>
-        <div class="col s5 in" style="animation-delay:21.1s">
-          <div class="colh"><p>Shortlisted</p><span class="cn" data-to="2" data-from="1" data-at="26.7" data-dur="0.5">1</span></div>
-          <div class="cc ghost"></div>
+        <div class="col s5 in" style="animation-delay:calc(var(--u)*19.95)">
+          <div class="colh"><p>Shortlisted</p><span class="cn">1</span></div>
           <div class="cc"><p>Kiran Joshi</p><small>6.8y · React, Micro-FE</small><span class="sc">89%</span></div>
         </div>
-        <div class="col s6 in" style="animation-delay:21.2s">
+        <div class="col s6 in" style="animation-delay:calc(var(--u)*20.01)">
           <div class="colh"><p>Accepted / Joined</p><span class="cn">1</span></div>
           <div class="cc"><p>Rohit Sharma</p><small>7.5y · React, Node</small><span class="sc">93%</span></div>
         </div>
       </div>
 
-      <div style="display:grid;gap:13px;grid-template-rows:auto auto 1fr">
-        <!-- Cumulative reach, so every row is >= the column occupancy above it -->
-        <div class="panel in" style="animation-delay:21.3s">
-          <div class="ph"><h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18l-7 8v7l-4 2v-9z"/></svg></span>Stage Reach</h3></div>
-          <div class="fnl">
-            <div class="frow"><span class="fl">Sourced</span><span class="fv" data-to="42" data-at="21.8">0</span>
-              <span class="ft"><i style="width:100%;background:var(--muted-foreground);animation-delay:21.6s"></i></span></div>
-            <div class="frow"><span class="fl">Screening</span><span class="fv" data-to="19" data-at="21.9">0</span>
-              <span class="ft"><i style="width:45%;background:var(--blue);animation-delay:21.7s"></i></span></div>
-            <div class="frow"><span class="fl">Internal Interview</span><span class="fv" data-to="8" data-at="22">0</span>
-              <span class="ft"><i style="width:19%;background:var(--violet);animation-delay:21.8s"></i></span></div>
-            <div class="frow"><span class="fl">Client Submission</span><span class="fv" data-to="6" data-at="22.1">0</span>
-              <span class="ft"><i style="width:14%;background:var(--amber);animation-delay:21.9s"></i></span></div>
-            <div class="frow"><span class="fl">Client Interview</span><span class="fv" data-to="3" data-at="22.2">0</span>
-              <span class="ft"><i style="width:7%;background:var(--orange);animation-delay:22s"></i></span></div>
-            <div class="frow"><span class="fl">Joined</span><span class="fv" data-to="1" data-at="22.3">0</span>
-              <span class="ft"><i style="width:3%;background:var(--emerald);animation-delay:22.1s"></i></span></div>
+      <div class="chat in" style="animation-delay:calc(var(--u)*20.07)">
+        <div class="chath">
+          <span class="av"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15v4M17 17h4"/></svg></span>
+          <div><b>UFT Assistant</b><small>Portal help · reports · team</small></div>
+        </div>
+        <div class="chatb">
+          <div class="mu pop" style="animation-delay:calc(var(--u)*21.2)">Move Vivek Menon to Client Interview</div>
+          <div class="ma pop" style="animation-delay:calc(var(--u)*22.0)">
+            <span class="sp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15v4M17 17h4"/></svg></span>
+            <span class="bub">Client Interview needs a date and time. When is it?</span>
+          </div>
+          <div class="mu pop" style="animation-delay:calc(var(--u)*22.8)">Thu 5 Sep, 4:00 PM</div>
+          <div class="ma pop" style="animation-delay:calc(var(--u)*23.5)">
+            <span class="sp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15v4M17 17h4"/></svg></span>
+            <span class="bub">Done — <b>Vivek Menon</b> is at Client Interview, Thu 5 Sep 4:00 PM. Invite sent to Kavya S.</span>
           </div>
         </div>
-
-        <div class="panel in" style="animation-delay:21.45s">
-          <div class="ph"><h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 17 6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></span>Submissions</h3>
-            <span class="delta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17 17 7M8 7h9v9"/></svg>+57%</span></div>
-          <svg viewBox="0 0 232 74" width="100%" height="74" role="img" aria-label="Submissions trend, six weeks">
-            <polyline class="spark" style="animation-delay:21.7s" points="8,52 51,38 94,58 137,30 180,44 224,10"/>
-          </svg>
-          <p style="margin:8px 0 0;font-size:10.5px;color:var(--muted-foreground)">Six weeks · 46 submitted, 10 joined</p>
+        <div class="chatin in" style="animation-delay:calc(var(--u)*20.15)">Ask about reports, your team, or the portal
+          <span class="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4z"/></svg></span>
         </div>
       </div>
     </div>
   </section>
-
   </div>
 </div>
 </div>
@@ -809,8 +1038,8 @@ body{
 /* ---------------------------------------------------------------------------
    1. Fit the fixed 1200x750 canvas into whatever box it is dropped in.
       Authoring at a fixed size and scaling once is what lets the same file be
-      a full-screen reel, a 610px card, and (if it is ever captured) a video
-      frame — without a single breakpoint.
+      a full-screen reel, a 610px product card, and (if it is ever captured) a
+      video frame — without a single breakpoint.
    --------------------------------------------------------------------------- */
 const stage = document.getElementById("stage");
 const frame = stage.parentElement;
@@ -829,17 +1058,17 @@ else addEventListener("resize", fit, { passive: true });
 fit();
 
 /* ---------------------------------------------------------------------------
-   2. The odometers — the only thing CSS cannot do here.
-      Each reads its own window off `data-at` / `data-dur` (seconds, absolute
-      in the 33s cycle) and eases from `data-from` to `data-to`.
+   2. The odometers — the only thing CSS cannot do here. Each reads its own
+      window off data-at / data-dur (seconds, absolute in the cycle) and eases
+      from data-from to data-to.
    --------------------------------------------------------------------------- */
-const CYCLE = 33000;
+const CYCLE = 26000;
 const counters = [...document.querySelectorAll("[data-to]")].map((el) => ({
   el,
   from: +(el.dataset.from || 0),
   to:   +el.dataset.to,
   at:   +el.dataset.at * 1000,
-  dur:  +(el.dataset.dur || 1.6) * 1000,
+  dur:  +(el.dataset.dur || 1.2) * 1000,
   pre:  el.dataset.pre || "",
   suf:  el.dataset.suf || "",
   comma: el.dataset.comma === "1",
@@ -849,45 +1078,14 @@ const fmt = (c, v) => {
   return c.pre + (c.comma ? n.toLocaleString("en-US") : String(n)) + c.suf;
 };
 
-if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
-  // No loop is running, so park every number on its settled value.
-  for (const c of counters) c.el.textContent = fmt(c, c.to);
-} else {
-  /* Take the clock from a real CSS animation rather than performance.now().
-     Both would start at roughly the same moment, but only this one cannot
-     drift — a number and the panel it sits in stay in step for as long as the
-     tab is open. `a1fade` is the reference because it is guaranteed present.
-     ponytail: if getAnimations() is missing (pre-2021 browsers) we fall back
-     to the wall clock — a sub-frame offset at worst, and the numbers still
-     land in the right act. */
-  let master = null;
-  const clock = () => {
-    if (!master && document.getAnimations) {
-      master = document.getAnimations().find((a) => a.animationName === "a1fade") || null;
-    }
-    const t = master && master.currentTime;
-    return (typeof t === "number" ? t : performance.now()) % CYCLE;
-  };
-  const ease = (p) => 1 - Math.pow(1 - p, 3);
-
-  const frame = () => {
-    const t = clock();
-    for (const c of counters) {
-      const p = Math.min(1, Math.max(0, (t - c.at) / c.dur));
-      c.el.textContent = fmt(c, c.from + (c.to - c.from) * ease(p));
-    }
-    requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
-}
-
 /* ---------------------------------------------------------------------------
    3. Measure the one move rather than writing it down.
-      The card that travels Client Interview -> Shortlisted used to carry a
-      hardcoded translate, which silently pointed three columns to the right
-      instead of one. offsetLeft/offsetTop are layout positions and ignore the
-      element's own transform, so they can be read at any point in the loop —
-      and re-read after webfonts land, which is what changes a card's height.
+      The card that travels Client Submission -> Client Interview used to carry
+      a hardcoded translate, which silently pointed three columns right instead
+      of one. The columns carry an entrance transform, so their offsetParent is
+      the column itself and offsetLeft reads 0 for both cards — decompose
+      instead: horizontal step from the two columns' own boxes, vertical from
+      each card's position inside its column, which is what offsetTop measures.
    --------------------------------------------------------------------------- */
 const mover = document.querySelector(".mover");
 const ghost = document.querySelector(".ghost");
@@ -895,11 +1093,6 @@ const aim = () => {
   if (!mover || !ghost) return;
   const colA = mover.closest(".col"), colB = ghost.closest(".col");
   if (!colA || !colB) return;
-  // The columns carry an entrance transform, so their offsetParent is the
-  // column itself, not the act — offsetLeft alone reads 0 for both cards and
-  // the move collapses. Decompose instead: take the horizontal step from the
-  // two columns' own boxes (unscaled), and the vertical from each card's
-  // position inside its column, which is what offsetTop actually measures.
   const box = stage.getBoundingClientRect();
   const s = box.width / 1200;
   if (!(s > 0)) return;                       // hidden tab — try again later
@@ -911,6 +1104,38 @@ const aim = () => {
 aim();
 // Webfonts change a card's height, which changes the slot the move opens.
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(aim);
+
+if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  // No loop is running, so park every number on its settled value.
+  for (const c of counters) c.el.textContent = fmt(c, c.to);
+} else {
+  /* Take the clock from a real CSS animation rather than performance.now().
+     Both would start at roughly the same moment, but only this one cannot
+     drift — a number and the panel it sits in stay in step for as long as the
+     tab is open. `a1fade` is the reference because it is guaranteed present.
+     ponytail: if getAnimations() is missing (pre-2021 browsers) we fall back to
+     the wall clock — a sub-frame offset at worst, and the numbers still land in
+     the right act. */
+  let master = null;
+  const clock = () => {
+    if (!master && document.getAnimations) {
+      master = document.getAnimations().find((a) => a.animationName === "a1fade") || null;
+    }
+    const t = master && master.currentTime;
+    return (typeof t === "number" ? t : performance.now()) % CYCLE;
+  };
+  const ease = (p) => 1 - Math.pow(1 - p, 3);
+
+  const tick = () => {
+    const t = clock();
+    for (const c of counters) {
+      const p = Math.min(1, Math.max(0, (t - c.at) / c.dur));
+      c.el.textContent = fmt(c, c.from + (c.to - c.from) * ease(p));
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
 
 /* The tab icon, from the same mark the sidebar uses. */
 const fav = document.createElement("link");
