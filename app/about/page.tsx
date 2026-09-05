@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import LeadershipCarousel from "@/components/about/LeadershipCarousel";
 import { ABOUT_STATS, ABOUT_STRENGTHS } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -75,11 +74,34 @@ export default function AboutPage() {
         <div className="sechead">
           <div>
             <div className="kicker">[ Leadership ]</div>
-            <h2>The people who run it.</h2>
+            <h2>Run by the people who built it.</h2>
           </div>
         </div>
+        <div className="leadboast">
+          <p>
+            Our management is not a layer above the work — it is the group that created it.
+            The President built Unitforce across <b>29 years</b> in product development,
+            engineering services and applied AI. The CEO has led global delivery for more than
+            <b>two decades</b>, took the AI practice from first pilots into production, and
+            served on NASSCOM&apos;s National SME Council.
+          </p>
+          <p>
+            Beneath them every function is owned outright — delivery, talent, finance,
+            AI engineering — each by a leader with <b>12 to 19 years</b> in that discipline,
+            not a generalist covering four. That bench is why a <b>400-person</b> company spanning
+            India, the USA and the UAE ships AI to ISO 9001:2015 discipline, and why the
+            person who scopes your project is the one accountable for it.
+          </p>
+          <a
+            className="btn accent"
+            href="https://uftech.com/about"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            See our management &#8599;
+          </a>
+        </div>
       </section>
-      <LeadershipCarousel />
 
       <Footer />
     </>

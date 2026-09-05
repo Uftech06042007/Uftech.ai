@@ -23,6 +23,19 @@ const securityHeaders = [
   },
 ];
 
+// The product reels under /demos are the one thing the site does frame: they
+// are whole HTML documents embedded in a product card (see CardEmbed.tsx), and
+// DENY / frame-ancestors 'none' above blocks that even same-origin. Narrow the
+// two framing headers to self for that directory and leave the rest as they are
+// — the reels still cannot be framed by anyone else.
+const framableHeaders = securityHeaders.map((h) =>
+  h.key === "X-Frame-Options"
+    ? { key: h.key, value: "SAMEORIGIN" }
+    : h.key === "Content-Security-Policy"
+      ? { key: h.key, value: "frame-ancestors 'self'" }
+      : h,
+);
+
 // The hero and card videos are ~26MB in total and their filenames are not
 // content-hashed, so `immutable` would strand a replacement for a year.
 // Instead: a short browser cache, and a long CDN cache that a new deployment
@@ -40,6 +53,8 @@ const nextConfig = {
       { source: "/:path*", headers: securityHeaders },
       { source: "/videos/:path*", headers: [mediaCacheHeader] },
       { source: "/images/:path*", headers: [mediaCacheHeader] },
+      // Last match wins per header key, so this must follow the catch-all above.
+      { source: "/demos/:path*", headers: framableHeaders },
     ];
   },
 };
