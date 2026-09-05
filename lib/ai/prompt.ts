@@ -1,6 +1,7 @@
 import {
   ABOUT_STATS,
   CONTACT_HELP_OPTIONS,
+  FEATURED_SERVICES,
   INDUSTRIES,
   PRODUCTS,
   SERVICES,
@@ -23,6 +24,12 @@ function buildContext(): string {
         .join("; ")}\n  Measures: ${p.s1} ${p.s1l}, ${p.s2} ${p.s2l}`,
   ).join("\n");
 
+  // The named tools the services section leads with. Without these the
+  // assistant would deny the existence of something the page links to.
+  const tools = FEATURED_SERVICES.map(
+    (f) => `- ${f.t}: ${f.b}\n  Link: ${f.href}`,
+  ).join("\n");
+
   const stages = STAGES.map((s) => `- ${s.num} ${s.t}: ${s.b}`).join("\n");
   const stats = ABOUT_STATS.map((s) => `${s.n} ${s.l}`).join(", ");
 
@@ -32,6 +39,9 @@ function buildContext(): string {
     "",
     "## Products",
     products,
+    "",
+    "## Tools a visitor can use directly",
+    tools,
     "",
     "## How we work (in order)",
     stages,

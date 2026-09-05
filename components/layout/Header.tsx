@@ -4,14 +4,36 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTheme } from "@/lib/ThemeContext";
 
-const NAV_LINKS = [
+interface NavLink {
+  href: string;
+  label: string;
+  /* Off-site. Rendered as a plain anchor with the same trailing arrow the
+     header already uses for uftech.com, so it is clear the link leaves. */
+  external?: boolean;
+}
+
+const NAV_LINKS: NavLink[] = [
   { href: "/#products", label: "Products" },
   { href: "/#services", label: "Services" },
   { href: "/#approach", label: "Approach" },
   { href: "/#industries", label: "Industries" },
   { href: "/about", label: "About" },
+  // Hiring runs on the group's own site rather than here.
+  { href: "https://uftech.in/", label: "Careers", external: true },
   { href: "/contact", label: "Contact" },
 ];
+
+// One renderer for both the desktop bar and the mobile dropdown, so a link
+// added to NAV_LINKS can never appear in one and not the other.
+function NavItem({ link }: { link: NavLink }) {
+  return link.external ? (
+    <a href={link.href} target="_blank" rel="noopener noreferrer">
+      {link.label} &#8599;
+    </a>
+  ) : (
+    <Link href={link.href}>{link.label}</Link>
+  );
+}
 
 export default function Header() {
   const { theme, toggleTheme } = useTheme();
@@ -29,13 +51,14 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // The dropdown only exists below the 1000px breakpoint — if the viewport
-  // grows past it (e.g. rotating a tablet) while open, close it so it can't
-  // linger behind the now-visible desktop nav.
+  // The dropdown only exists below the header's 1200px breakpoint — if the
+  // viewport grows past it (e.g. rotating a tablet) while open, close it so it
+  // can't linger behind the now-visible desktop nav. Keep this in step with
+  // the matching media query in globals.css.
   useEffect(() => {
     if (!menuOpen) return;
     const onResize = () => {
-      if (window.innerWidth >= 1000) setMenuOpen(false);
+      if (window.innerWidth >= 1200) setMenuOpen(false);
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -63,9 +86,7 @@ export default function Header() {
       </Link>
       <nav className="links">
         {NAV_LINKS.map((l) => (
-          <Link key={l.href} href={l.href}>
-            {l.label}
-          </Link>
+          <NavItem key={l.href} link={l} />
         ))}
       </nav>
       <div className="navright">
@@ -95,9 +116,7 @@ export default function Header() {
       {menuOpen && (
         <nav className="navmobile" onClick={() => setMenuOpen(false)}>
           {NAV_LINKS.map((l) => (
-            <Link key={l.href} href={l.href}>
-              {l.label}
-            </Link>
+            <NavItem key={l.href} link={l} />
           ))}
           <a href="https://uftech.com/" target="_blank" rel="noopener noreferrer">
             uftech.com ↗

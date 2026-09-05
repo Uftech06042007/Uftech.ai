@@ -4,11 +4,14 @@ import dynamic from "next/dynamic";
 import { PRODUCTS, type ProductItem } from "@/lib/data";
 import FieldLayer from "@/components/shared/FieldLayer";
 import CardVideo from "@/components/shared/CardVideo";
+import CardEmbed from "@/components/shared/CardEmbed";
 
 const CardScene = dynamic(() => import("@/components/three/CardScene"), { ssr: false });
 
-// A real screen-capture, when we have one, beats the generated 3D scene.
+// The live product beats a recording of it, and a recording beats the
+// generated 3D scene.
 function ProductVisual({ p }: { p: ProductItem }) {
+  if (p.demo) return <CardEmbed src={p.demo} title={`${p.t} — product reel`} />;
   return p.video ? <CardVideo src={p.video} /> : <CardScene kind={p.visual} />;
 }
 
@@ -73,7 +76,12 @@ export default function Products() {
 
       <div className="pfull">
         {PRODUCTS.map((p, i) => (
-          <article key={p.k} className={`blueprint pcard psplit${i % 2 === 1 ? " flip" : ""}`}>
+          // The visual alternates sides down the column: odd rows put it on
+          // the right, so the eye zig-zags instead of running down one edge.
+          <article
+            key={p.k}
+            className={`blueprint pcard psplit${i % 2 ? " flip" : ""}${p.demo ? " pdemo" : ""}`}
+          >
             <Corners />
             <ProductPanel p={p} />
           </article>
