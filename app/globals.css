@@ -417,6 +417,26 @@ footer{padding:54px 34px 40px;border-top:1px solid var(--line);background:var(--
   .dock-feats{grid-column:1/-1;grid-row:2;flex-direction:row;flex-wrap:wrap;gap:8px 14px;padding-left:0}
 }
 
+/* Seven items need ~1270px at the full 32px gap, which would push common
+   1280-wide laptops onto the burger. Tightening the gap in the band just above
+   the collapse point buys ~70px and keeps the real nav on those screens; the
+   32px spacing is untouched above 1360. */
+@media (max-width:1360px){
+  nav.links{gap:20px}
+}
+
+/* The header collapses ahead of the 1000px breakpoint below. Seven nav items
+   plus the brand block and the right-hand cluster measure ~1230px, so the bar
+   overlapped itself between 1000 and 1200 — 'Contact' ran into 'uftech.com'
+   and the brand text wrapped to three lines. Collapse to the burger before
+   that happens. Header.tsx closes its dropdown at this same width, so the two
+   have to move together. */
+@media (max-width:1200px){
+  nav.links{display:none}
+  .navright-items{display:none}
+  .navburger{display:flex}
+}
+
 @media (max-width:1000px){
   .scards,.pcards{grid-template-columns:1fr}
   .slaunchrow{grid-template-columns:1fr;gap:20px}
