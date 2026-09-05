@@ -142,6 +142,9 @@ export interface ProductItem {
   k: string;
   t: string;
   tag: string;
+  // A self-contained HTML reel of the real product, embedded in the card.
+  // Takes priority over both the video and the 3D scene.
+  demo?: string;
   // Optional real screen-capture video — takes priority over the 3D scene.
   video?: string;
   visual: ProductVisualKind;
@@ -159,7 +162,7 @@ export const PRODUCTS: ProductItem[] = [
     k: "01 / Talent + CRM",
     t: "AI Talent & CRM",
     tag: "PRODUCT · TALENT & CRM",
-    video: "/videos/ai-talent-crm.mp4",
+    demo: "/demos/ta-crm-loop.html",
     visual: "talent-crm",
     short: "Hire the team, then run the pipeline — sourcing and revenue in one product.",
     chips: ["AI sourcing", "Resume screening", "Lead scoring", "Pipeline forecasting"],
@@ -178,7 +181,7 @@ export const PRODUCTS: ProductItem[] = [
     k: "02 / HRMS & Compliance",
     t: "AI HRMS & Compliance",
     tag: "PRODUCT · AI HRMS & COMPLIANCE",
-    video: "/videos/ai-hrms.mp4",
+    demo: "/demos/hrms-chatbot-loop.html",
     visual: "hrms",
     short: "From onboarding to payroll to statutory filings, one system. Humans handled, compliance covered.",
     chips: [
@@ -205,7 +208,7 @@ export const PRODUCTS: ProductItem[] = [
     k: "03 / Finance Bot",
     t: "AI Finance Bot",
     tag: "PRODUCT · CONVERSATIONAL AI",
-    video: "/videos/finance_bot.mp4",
+    demo: "/demos/finance-bot-loop.html",
     visual: "support-bots",
     short: "A conversational agent for Procure-to-Pay — vendor invoice status and issue handling, on demand.",
     chips: ["Vendor invoice status", "P2P query handling", "Auto-escalation", "24/7, human handoff"],
