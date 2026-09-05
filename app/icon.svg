@@ -1,5 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="10" fill="#242b31"/>
-  <rect x="5" y="5" width="54" height="54" rx="5" fill="none" stroke="#e2a06c" stroke-width="3"/>
-  <text x="32" y="41" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="19" font-weight="700" letter-spacing="0.5" fill="#f1f3f5" text-anchor="middle">UFT</text>
-</svg>
