@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { SERVICES, SHORT, type ServiceItem } from "@/lib/data";
+import { FEATURED_SERVICES, SERVICES, SHORT, type FeaturedService, type ServiceItem } from "@/lib/data";
 import FieldLayer from "@/components/shared/FieldLayer";
 import CardVideo from "@/components/shared/CardVideo";
 
@@ -11,6 +11,28 @@ const CardScene = dynamic(() => import("@/components/three/CardScene"), { ssr: f
 // A real screen-capture, when we have one, beats the generated 3D scene.
 function ServiceVisual({ s }: { s: ServiceItem }) {
   return s.video ? <CardVideo src={s.video} zoom={s.videoZoom} /> : <CardScene kind={s.visual} />;
+}
+
+// The two named tools above the cards. Both leave the site, so both are links
+// — unlike the six service cards below, which expand a detail panel in place.
+function FeaturedCard({ f }: { f: FeaturedService }) {
+  return (
+    <a
+      className="blueprint slaunch"
+      href={f.href}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <i className="corner tl" />
+      <i className="corner tr" />
+      <i className="corner bl" />
+      <i className="corner br" />
+      <div className="mono sbadge">{f.badge}</div>
+      <h4>{f.t}</h4>
+      <p>{f.b}</p>
+      <span className="scta mono">{f.cta} &#8599;</span>
+    </a>
+  );
 }
 
 export default function Services() {
@@ -45,6 +67,12 @@ export default function Services() {
         >
           Other services ↗
         </a>
+      </div>
+
+      <div className="slaunchrow">
+        {FEATURED_SERVICES.map((f) => (
+          <FeaturedCard key={f.t} f={f} />
+        ))}
       </div>
 
       <div className="scards">

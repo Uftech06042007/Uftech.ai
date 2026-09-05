@@ -131,6 +131,37 @@ export const SHORT: string[] = [
   "Containerised, versioned deployment with rollback.",
 ];
 
+/* ---------- Named tools that sit above the service cards ---------- */
+/* These are products a visitor can go and use, not engagements we scope — so
+   they lead the services section as their own tier rather than joining the six
+   cards below, which all open a detail panel instead of leaving the site. */
+
+export interface FeaturedService {
+  /* Short label above the title, in place of the service cards’ numbering. */
+  badge: string;
+  t: string;
+  b: string;
+  href: string;
+  cta: string;
+}
+
+export const FEATURED_SERVICES: FeaturedService[] = [
+  {
+    badge: "AI tool",
+    t: "Build Your CV",
+    b: "Rewrite and restructure your CV for the role you are going after, step by step, and take the finished version away with you.",
+    href: "https://uftech.in/enhance-cv",
+    cta: "Build your CV",
+  },
+  {
+    badge: "AI tool",
+    t: "AI Interview",
+    b: "Sit a practice interview with an AI that asks what the role would ask, then tells you how your answers landed.",
+    href: "https://uftech.in/mock-interview",
+    cta: "Try AI Interview",
+  },
+];
+
 export type ProductVisualKind = "talent-crm" | "talent" | "hrms" | "crm" | "support-bots";
 
 export interface ProductFeat {

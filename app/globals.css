@@ -116,6 +116,18 @@ h2{font-family:var(--font-barlow-condensed),'Barlow Condensed',sans-serif;font-w
 .scard h4{font:600 26px var(--font-barlow-condensed),'Barlow Condensed',sans-serif;margin:0 0 10px}
 .scard p{margin:0;font-size:15.5px;color:var(--ink2);line-height:1.6}
 .scards{display:grid;grid-template-columns:repeat(3,1fr);gap:32px 28px}
+
+/* The two named tools above the service cards. They are a different kind of
+   thing from the six below — something to go and use rather than an
+   engagement to scope — so they get the accent border and a visible call to
+   action instead of the click-to-expand affordance. */
+.slaunchrow{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:32px}
+.slaunch{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:24px 22px;border:1px solid var(--acc-soft);background:var(--pg2);color:inherit;text-decoration:none;transition:background .2s ease,transform .2s ease}
+.slaunch:hover{background:var(--acc-dim);transform:translateY(-3px);color:inherit}
+.slaunch .sbadge{font-size:10.5px;color:var(--acc)}
+.slaunch h4{font:600 28px var(--font-barlow-condensed),'Barlow Condensed',sans-serif;margin:0}
+.slaunch p{margin:0;font-size:15px;color:var(--ink2);line-height:1.6}
+.slaunch .scta{margin-top:6px;font-size:11.5px;color:var(--acc);border-bottom:1px solid var(--acc-soft);padding-bottom:3px}
 .sdetail{margin-top:36px;border:1px solid var(--acc-soft);background:var(--pg2);display:grid;grid-template-columns:480px 1fr;position:relative;scroll-margin-top:96px}
 .sdetail .img{min-height:380px;border-right:1px solid var(--line);background:var(--acc-dim)}
 .sdetail .body{padding:30px 32px}
@@ -407,6 +419,7 @@ footer{padding:54px 34px 40px;border-top:1px solid var(--line);background:var(--
 
 @media (max-width:1000px){
   .scards,.pcards{grid-template-columns:1fr}
+  .slaunchrow{grid-template-columns:1fr;gap:20px}
   .statband{grid-template-columns:1fr 1fr}
   .sdetail{grid-template-columns:1fr}
   /* Same 1280x720 sources as the product cards — see the note there. */
@@ -450,6 +463,7 @@ footer{padding:54px 34px 40px;border-top:1px solid var(--line);background:var(--
   .stat{padding:16px 14px}
   .stat .n{font-size:30px}
   .infogrid{grid-template-columns:1fr}
+  .slaunch h4{font-size:24px}
   /* The timeline turns vertical here. The rail, its progress fill and the
      tracer are all width-driven — a horizontal line across the top with the
      dots marching down the page away from it — so they are replaced rather
