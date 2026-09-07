@@ -198,6 +198,15 @@ h2{font-family:var(--font-barlow-condensed),'Barlow Condensed',sans-serif;font-w
 
 @media(max-width:900px){
   .psplit{grid-template-columns:1fr}
+  /* `.psplit.flip` declares a two-column template of its own, which outweighs
+     the single-column rule above — so collapsing the alternating rows needs a
+     selector of the same weight, or they stay side-by-side on a phone. That is
+     worse than a cramped row: left in two tracks, a `pdemo` visual has nothing
+     but its own aspect ratio to size its `fr` from and resolves to ~1100px in a
+     445px card, so `.psplit`'s overflow:hidden clips the reel to its left third
+     — at ~2.5x the scale of its neighbours — and cuts the copy half off the
+     card entirely. */
+  .psplit.flip{grid-template-columns:1fr}
   /* Stacked on a phone the visual always leads, so the flip would otherwise
      drop it below the copy on alternate rows. */
   .psplit.flip .psplit-visual{order:0;border-left:0;border-bottom:1px solid var(--line)}
