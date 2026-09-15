@@ -53,7 +53,7 @@ single `.env.local`, which is gitignored and should never be committed.
 
 | Area          | Variables                                                            |
 | ------------- | -------------------------------------------------------------------- |
-| Site          | `NEXT_PUBLIC_SITE_URL`                                               |
+| Site          | `NEXT_PUBLIC_SITE_URL`, `GOOGLE_SITE_VERIFICATION`                   |
 | Lead delivery | `RESEND_API_KEY`, `CONTACT_FROM_EMAIL`, `CONTACT_TO_EMAIL`           |
 | Assistant     | `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`, `AI_MODEL`, `AI_MODEL_FAST` |
 | Rate limiting | `CHAT_RATE_LIMIT_*`, `CHAT_CONVERTED_RATE_LIMIT_*`                   |
@@ -74,8 +74,13 @@ Set these in the hosting platform's environment configuration, never in a
 committed file.
 
 - `NEXT_PUBLIC_SITE_URL` — the canonical origin, including the scheme and with
-  no trailing slash (for example `https://example.com`). Used for Open Graph
-  tags, `robots.txt` and the sitemap.
+  no trailing slash (for example `https://example.com`). Used for canonical
+  URLs, Open Graph tags, JSON-LD, `robots.txt`, `llms.txt` and the sitemap. A
+  trailing slash is stripped, but getting the host wrong points every canonical
+  on the site at somewhere that does not exist.
+- `GOOGLE_SITE_VERIFICATION` — optional. The token from the Search Console
+  property, if verifying by meta tag rather than by DNS. Omit it and no tag is
+  rendered.
 - `RESEND_API_KEY` and `CONTACT_FROM_EMAIL` — a live [Resend](https://resend.com)
   key and a sender address on a domain verified there. The default sandbox
   sender does not deliver to arbitrary inboxes.
@@ -84,6 +89,46 @@ committed file.
   and `AI_MODEL` as well if you are using an Anthropic-compatible endpoint
   rather than Anthropic directly.
 - `DATABASE_URL` — the production PostgreSQL connection string.
+
+## Search
+
+The site is built to be indexed, not just to look right. What that means in
+practice, and where each part lives:
+
+- **A page per offering.** Every service and product has its own URL under
+  `/services/<slug>` and `/products/<slug>`, generated from `lib/seo-pages.ts`
+  joined to `lib/data.ts`. The homepage still shows all of them, but a page
+  that covers nine subjects ranks for none of them in particular — and the six
+  service descriptions on the homepage only exist after a click, so they are
+  not in the HTML a crawler reads at all.
+- **One canonical per page**, set by `pageMetadata()` in `lib/seo.ts`. It is
+  deliberately *not* set in the root layout: a canonical there is inherited by
+  every child that does not override it, which would have the whole site
+  declaring the homepage as its canonical.
+- **Structured data** in `lib/schema.ts` — one `ProfessionalService` and one
+  `WebSite` node for the site, emitted from the root layout, plus `Service`,
+  `SoftwareApplication`, `FAQPage` and `BreadcrumbList` per page. Nodes
+  reference the organisation by `@id` instead of repeating it, so a crawler
+  resolves the site to a single entity.
+- **`/sitemap.xml` and `/robots.txt`** are generated from the same arrays as
+  the routes, so a new service cannot ship with a page and no sitemap entry.
+- **`/llms.txt`** states in plain prose what the company does and which URL
+  covers each part, for answer engines that do badly with a page whose
+  substance is behind a click handler and a WebGL canvas.
+
+`tests/seo.test.ts` covers the parts that fail silently: the sitemap matching
+the routes, every offering having exactly one page, title and description
+lengths, and the shape of the JSON-LD.
+
+Two things are deliberately **not** in the code and have to be done once, by
+hand, in the relevant console:
+
+1. Verify the domain in Google Search Console and Bing Webmaster Tools, and
+   submit `https://<host>/sitemap.xml` in both.
+2. Claim and complete the Google Business Profile for the Bengaluru office.
+   Name, address and phone must match `ORG` in `lib/seo.ts` character for
+   character — inconsistent NAP is the usual reason a local listing fails to
+   consolidate.
 
 ## Database
 
@@ -162,7 +207,7 @@ records resolve.
 ```
 app/                  routes, API handlers, global styles
 components/           UI, grouped by page and by shared use
-lib/                  data, assistant prompt and client, lead handling, helpers
+lib/                  data, SEO metadata and schema, assistant prompt, helpers
 prisma/               schema and migrations
 public/               images and video
 tests/                Vitest suites

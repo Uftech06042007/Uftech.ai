@@ -3,25 +3,29 @@ import {
   CONTACT_HELP_OPTIONS,
   FEATURED_SERVICES,
   INDUSTRIES,
-  PRODUCTS,
-  SERVICES,
   STAGES,
 } from "@/lib/data";
+import { absoluteUrl } from "@/lib/seo";
+import { PRODUCT_ENTRIES, productPath, SERVICE_ENTRIES, servicePath } from "@/lib/seo-pages";
 
 /**
  * Built from lib/data.ts so the site copy and the assistant can never disagree —
  * editing a service or product updates both.
  */
 function buildContext(): string {
-  const services = SERVICES.map(
-    (s) => `- ${s.t}: ${s.b}\n  Capabilities: ${s.l.join("; ")}\n  Measures: ${s.s1} ${s.s1l}, ${s.s2} ${s.s2l}`,
+  // Each entry carries the URL of its own page, so the assistant can send a
+  // visitor who wants more depth to the page that has it rather than trying to
+  // paraphrase several hundred words into a chat panel.
+  const services = SERVICE_ENTRIES.map(
+    ({ page, item: s }) =>
+      `- ${s.t}: ${s.b}\n  Capabilities: ${s.l.join("; ")}\n  Measures: ${s.s1} ${s.s1l}, ${s.s2} ${s.s2l}\n  Page: ${absoluteUrl(servicePath(page.slug))}`,
   ).join("\n");
 
-  const products = PRODUCTS.map(
-    (p) =>
+  const products = PRODUCT_ENTRIES.map(
+    ({ page, item: p }) =>
       `- ${p.t} (${p.chips.join(", ")}): ${p.short}\n  Features: ${p.feats
         .map((f) => `${f.t} — ${f.d}`)
-        .join("; ")}\n  Measures: ${p.s1} ${p.s1l}, ${p.s2} ${p.s2l}`,
+        .join("; ")}\n  Measures: ${p.s1} ${p.s1l}, ${p.s2} ${p.s2l}\n  Page: ${absoluteUrl(productPath(page.slug))}`,
   ).join("\n");
 
   // The named tools the services section leads with. Without these the
@@ -78,6 +82,8 @@ Use bullets when you are listing. Use plain sentences for everything else — a 
 End with a brief question that moves things forward — which area they care about, or whether they want to talk to someone. One question, not several.
 
 Answer from the context above. When a question goes beyond it, say plainly that you do not have that detail and offer to put them in touch with someone who does. A question you cannot answer is a reason to connect them with a person, not a reason to guess.
+
+Each service and product above lists a Page. When someone wants more depth on one of them, answer briefly and then point them at that page by name — "there is a full page on AI copilots" — rather than trying to fit the whole thing into the panel. Only ever name a page that is listed above.
 
 Never invent: pricing, project timelines, client names, team size, contract terms, or specific guarantees. These are commercial commitments and only a human can make them. If asked, say it depends on scope and offer to connect them.
 

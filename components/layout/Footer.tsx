@@ -2,6 +2,12 @@
 
 import Link from "next/link";
 import { useTheme } from "@/lib/ThemeContext";
+import {
+  PRODUCT_ENTRIES,
+  productPath,
+  SERVICE_ENTRIES,
+  servicePath,
+} from "@/lib/seo-pages";
 
 const LINKEDIN_PATH =
   "M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.03-1.85-3.03-1.85 0-2.14 1.45-2.14 2.94v5.66H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.61 0 4.28 2.38 4.28 5.47v6.27zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z";
@@ -75,21 +81,28 @@ export default function Footer() {
             </a>
           </div>
         </div>
+        {/* Every product and service points at its own page rather than at a
+            homepage anchor. Three reasons: the anchor was the same URL nine
+            times over, so it passed no signal about any individual offering;
+            the footer is on every page, which makes each detail page one hop
+            from anywhere; and the link text now matches the page it opens.
+            Generated from lib/seo-pages.ts so the list cannot fall behind. */}
         <div className="fcol">
           <h5>AI PRODUCTS</h5>
           <div className="flinks">
-            <Link href="/#products">AI Talent &amp; CRM</Link>
-            <Link href="/#products">AI HRMS &amp; Compliance</Link>
-            <Link href="/#products">AI Finance Bot</Link>
+            {PRODUCT_ENTRIES.map(({ page, item }) => (
+              <Link key={page.slug} href={productPath(page.slug)}>
+                {item.t}
+              </Link>
+            ))}
           </div>
           <h5 style={{ marginTop: 20 }}>AI SERVICES</h5>
           <div className="flinks">
-            <Link href="/#services">Custom AI agents</Link>
-            <Link href="/#services">GenAI &amp; RAG systems</Link>
-            <Link href="/#services">AI copilots</Link>
-            <Link href="/#services">Enterprise automation</Link>
-            <Link href="/#services">Risk &amp; fraud intelligence</Link>
-            <Link href="/#services">Model deployment &amp; MLOps</Link>
+            {SERVICE_ENTRIES.map(({ page, item }) => (
+              <Link key={page.slug} href={servicePath(page.slug)}>
+                {item.t}
+              </Link>
+            ))}
           </div>
         </div>
         <div className="fcol">
@@ -108,8 +121,8 @@ export default function Footer() {
           <div className="flinks">
             <Link href="/about">About</Link>
             <Link href="/#approach">Approach</Link>
-            <Link href="/#products">Products</Link>
-            <Link href="/#services">Services</Link>
+            <Link href="/products">Products</Link>
+            <Link href="/services">Services</Link>
             <Link href="/contact">Contact</Link>
             <a href="https://uftech.com/" target="_blank" rel="noopener noreferrer">
               uftech.com ↗

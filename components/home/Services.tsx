@@ -2,9 +2,11 @@
 
 import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { FEATURED_SERVICES, SERVICES, SHORT, type FeaturedService, type ServiceItem } from "@/lib/data";
 import FieldLayer from "@/components/shared/FieldLayer";
 import CardVideo from "@/components/shared/CardVideo";
+import { servicePath, slugForKey } from "@/lib/seo-pages";
 
 const CardScene = dynamic(() => import("@/components/three/CardScene"), { ssr: false });
 
@@ -51,6 +53,8 @@ export default function Services() {
     }
   };
 
+  const detailSlug = sel >= 0 ? slugForKey(SERVICES[sel].k) : undefined;
+
   return (
     <section id="services" ref={sectionRef}>
       <FieldLayer />
@@ -59,14 +63,19 @@ export default function Services() {
           <div className="kicker">[ Services ]</div>
           <h2>AI services we deliver.</h2>
         </div>
-        <a
-          className="btn sm accent"
-          href="https://uftech.com/services"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Other services ↗
-        </a>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Link className="btn sm" href="/services">
+            All AI services
+          </Link>
+          <a
+            className="btn sm accent"
+            href="https://uftech.com/services"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Other services ↗
+          </a>
+        </div>
       </div>
 
       <div className="slaunchrow">
@@ -122,6 +131,15 @@ export default function Services() {
                 <div className="mono l">{SERVICES[sel].s2l}</div>
               </div>
             </div>
+            {/* This panel is the only place the six services' detail copy
+                appears, and it is rendered client-side on click — so none of it
+                reaches a crawler. The page behind this link is where that copy
+                lives in the HTML, and this is the route to it from here. */}
+            {detailSlug && (
+              <Link className="btn sm accent sdetail-more" href={servicePath(detailSlug)}>
+                Full details on {SERVICES[sel].t} →
+              </Link>
+            )}
           </div>
         </div>
       )}

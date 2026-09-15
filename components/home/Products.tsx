@@ -1,7 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { PRODUCTS, type ProductItem } from "@/lib/data";
+import { productPath, slugForKey } from "@/lib/seo-pages";
 import FieldLayer from "@/components/shared/FieldLayer";
 import CardVideo from "@/components/shared/CardVideo";
 import CardEmbed from "@/components/shared/CardEmbed";
@@ -28,6 +30,8 @@ function Corners() {
 
 /** The wide card: visual on one side, the whole story on the other. */
 function ProductPanel({ p }: { p: ProductItem }) {
+  const slug = slugForKey(p.k);
+
   return (
     <>
       <div className="psplit-visual">
@@ -55,6 +59,14 @@ function ProductPanel({ p }: { p: ProductItem }) {
             <div className="l">{p.s2l}</div>
           </div>
         </div>
+        {/* The card is the summary; the page is the subject. Without this link
+            the only route to /products/* was the footer, and a visitor reading
+            about a product had nowhere deeper to go. */}
+        {slug && (
+          <Link className="btn sm accent pcard-more" href={productPath(slug)}>
+            More on {p.t} →
+          </Link>
+        )}
       </div>
     </>
   );
