@@ -163,6 +163,9 @@ h2{font-family:var(--font-barlow-condensed),'Barlow Condensed',sans-serif;font-w
 /* An embedded HTML reel fills its slot exactly like the video it replaces.
    It scales its own fixed canvas to this box and letterboxes the remainder,
    so no object-fit equivalent is needed here. */
+/* The reel is mounted by an observer rather than rendered up front, so the
+   slot holds its own box and lets the card's background show until it is. */
+.card-embed-slot{position:absolute;inset:0}
 .card-embed{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;pointer-events:none}
 .pcard-feats{margin-top:16px;display:grid;gap:9px}
 .pcard-feat{display:flex;align-items:baseline;gap:9px;font-size:13px;color:var(--ink2)}

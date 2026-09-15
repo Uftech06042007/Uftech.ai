@@ -167,3 +167,32 @@ prisma/               schema and migrations
 public/               images and video
 tests/                Vitest suites
 ```
+
+## Performance
+
+The homepage leads with a full-bleed autoplaying video, and that video is the
+largest thing on screen — which makes it the Largest Contentful Paint element.
+Measured on a throttled mobile profile, LCP was 5.7s, effectively all of it
+spent waiting for enough of a 2.7MB MP4 to decode one frame.
+
+The video stays. Three changes took LCP to 3.4s without touching it:
+
+- **A poster.** `public/images/hero-poster.webp` is a 13KB still of the opening
+  frame. A `<video>` with no poster reports LCP on its first decoded frame; with
+  one, the poster is the candidate, so LCP no longer depends on the MP4 at all.
+- **Deferred loading.** The hero video has no `src` until the browser goes idle
+  (`CardVideo`, `deferred` prop), so 2.7MB of decoration stops competing with
+  the CSS, fonts and scripts that decide first paint. It also stays on the
+  poster permanently under `prefers-reduced-motion` or `Save-Data`.
+- **Genuinely lazy reels.** `loading="lazy"` was not enough — Chrome's lazy
+  threshold scales with connection speed, and all three product reels were
+  fetched within 300ms. `CardEmbed` now mounts its iframe from an
+  IntersectionObserver instead.
+
+Separately, `uft-logo-dark.png` was a 785x318 export weighing 150KB for an
+element rendered 42px tall; it is now 350x142 and 50KB, matching the scale of
+its light-mode counterpart.
+
+LCP is now pinned to first contentful paint — the video is no longer the
+bottleneck, and further gains have to come from the render-blocking chain and
+the ~1.1s of style and layout work, not from the media.
