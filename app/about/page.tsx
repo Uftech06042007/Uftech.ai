@@ -1,18 +1,28 @@
 import type { Metadata } from "next";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import Breadcrumbs from "@/components/seo/Breadcrumbs";
 import { ABOUT_STATS, ABOUT_STRENGTHS } from "@/lib/data";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "About — UFTECH.AI",
+/* The brand is appended by the layout's title template — see app/layout.tsx. */
+export const metadata: Metadata = pageMetadata({
+  title: "About UFTECH.AI — Applied AI since 2003",
   description:
-    "Inspired innovations since 2003 — UFTECH.AI is the applied-AI division of Unitforce Technologies.",
-};
+    "UFTECH.AI is the applied-AI division of Unitforce Technologies: 400+ employees across India, the USA and the UAE, ISO 9001:2015 certified, delivering software and AI since 2003.",
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (
     <>
       <Header />
+      <Breadcrumbs
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "About", path: "/about" },
+        ]}
+      />
       <section id="about-hero">
         <div className="kicker">[ About ]</div>
         <h1>Inspired Innovations since 2003.</h1>

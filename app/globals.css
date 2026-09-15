@@ -618,3 +618,99 @@ footer{padding:54px 34px 40px;border-top:1px solid var(--line);background:var(--
   .chatformfield,
   .chatinput textarea{font-size:16px}
 }
+
+/* ------------------------------------------------------------------
+   Service and product detail pages (/services/*, /products/*)
+
+   These exist so each offering has one crawlable, indexable URL of its
+   own — the homepage shows every service, which means it can rank for
+   none of them in particular. Everything here is new class names, so
+   the block sits at the end of the file without needing to outrank
+   anything above it.
+   ------------------------------------------------------------------ */
+
+/* Breadcrumbs. Visible ones, not just the JSON-LD: they give the page a
+   second internal link back to its hub and tell a visitor arriving cold
+   from a search result where they have landed. */
+.crumbs{padding:22px 34px 0;font-size:13px;color:var(--ink3);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.crumbs a{color:var(--ink3);text-decoration:none}
+.crumbs a:hover{color:var(--acc)}
+.crumbs span[aria-current]{color:var(--ink2)}
+.crumbs .sep{color:var(--line)}
+
+#detail-hero{border-top:0;padding-top:26px}
+#detail-hero h1{font-size:62px;max-width:15ch}
+#detail-hero .lede{max-width:620px;margin:26px 0 0;font-size:18px;line-height:1.6;color:var(--ink2)}
+#detail-hero .herobtns{margin-top:30px}
+
+/* Long-form body copy. A reading measure the .sub column is far too narrow
+   for — this is the text the page is actually trying to rank on. */
+.prose{max-width:780px}
+.prose h2{font-size:34px;margin:0 0 16px}
+.prose p{margin:0 0 16px;font-size:17px;line-height:1.75;color:var(--ink2)}
+.prose p:last-child{margin-bottom:0}
+.prose + .prose{margin-top:44px}
+
+.caps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 28px;max-width:860px}
+.caps li{display:flex;gap:12px;align-items:flex-start;font-size:16px;line-height:1.6;color:var(--ink2);list-style:none}
+.caps .d{color:var(--acc);font-size:12px;line-height:1.8;flex:none}
+.caps{margin:0;padding:0}
+
+/* FAQ. Plain headings and paragraphs rather than a disclosure widget: the
+   answer has to be in the HTML for the FAQPage markup on the same page to
+   be truthful, and collapsed-by-default content is worth less either way. */
+.faq{display:grid;gap:26px;max-width:820px}
+.faq h3{font:600 23px var(--font-barlow-condensed),'Barlow Condensed',sans-serif;margin:0 0 8px;color:var(--ink)}
+.faq p{margin:0;font-size:16px;line-height:1.7;color:var(--ink2)}
+
+/* Cross-links between siblings, so every detail page is one hop from every
+   other and a crawler never dead-ends on a leaf. */
+/* Five stages do not divide into the four-column .infogrid the about page
+   uses, so this variant flows to whatever fits and keeps them on one row
+   where there is width for it. */
+.infogrid.flow{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+
+/* Links out of the homepage into the detail pages. */
+.sdetail-more{margin-top:24px;display:inline-block}
+.pcard-more{margin-top:20px;align-self:flex-start;display:inline-block}
+
+/* The contact page's heading was promoted from h2 to h1 for the document
+   outline; it keeps the h2's size, because nothing about the layout changed. */
+#contact .sechead h1{font-size:48px;line-height:1;letter-spacing:normal}
+@media (max-width:640px){#contact .sechead h1{font-size:34px}}
+
+/* A service or product states two measures, not the four the band on the
+   homepage was sized for. */
+.statband.duo{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+/* Detail pages run h1 > h2 > h3, so the feature cards head at h3 where the
+   about page heads at h4. Same type, correct outline. */
+.infocard h3{font:600 22px var(--font-barlow-condensed),'Barlow Condensed',sans-serif;margin:0 0 10px;color:var(--ink)}
+
+.relgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.relcard{display:block;padding:22px 20px;text-decoration:none;background:var(--pg);transition:background .2s ease,transform .2s ease}
+.relcard:hover{background:var(--acc-dim);transform:translateY(-3px)}
+.relcard .k{font-size:11px;color:var(--acc);margin-bottom:12px}
+.relcard h3{font:600 22px var(--font-barlow-condensed),'Barlow Condensed',sans-serif;margin:0 0 8px;color:var(--ink)}
+.relcard p{margin:0;font-size:14.5px;color:var(--ink2);line-height:1.6}
+
+/* The hub pages reuse .scard, which is built for a click handler rather than
+   a link — restore what an <a> loses. */
+a.scard{display:block;text-decoration:none}
+a.scard h3{font:600 26px var(--font-barlow-condensed),'Barlow Condensed',sans-serif;margin:0 0 10px;color:var(--ink)}
+.scard .more{display:inline-block;margin-top:14px;font-size:12px;color:var(--acc)}
+
+@media (max-width:1000px){
+  .relgrid{grid-template-columns:repeat(2,1fr)}
+  #detail-hero h1{font-size:52px}
+}
+@media (max-width:760px){
+  .caps{grid-template-columns:1fr}
+  .relgrid{grid-template-columns:1fr}
+  #detail-hero h1{font-size:40px;max-width:none}
+  .prose h2{font-size:28px}
+  .prose p{font-size:16px}
+}
+@media (max-width:640px){
+  .crumbs{padding:18px 20px 0}
+}

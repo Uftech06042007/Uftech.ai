@@ -53,6 +53,12 @@ The system prompt is built from `lib/data.ts` — `SERVICES`, `PRODUCTS`, `STAGE
 `INDUSTRIES`, `ABOUT_STATS`, `CONTACT_HELP_OPTIONS` — so the site copy and the
 chatbot can never disagree. Editing `lib/data.ts` updates both.
 
+Each service and product in that context also carries the URL of its own page
+(see "Search and indexing"), so the assistant answers briefly and points a
+visitor who wants depth at the page that has it, rather than trying to compress
+several hundred words into a chat panel. It may only name a page listed in the
+context — an invented URL is as bad as an invented fact.
+
 Rules the assistant follows:
 
 - Answer from the supplied context. **When the answer isn't in it, say so and offer
@@ -191,6 +197,68 @@ The same rules as the contact form apply, because both share `lib/leads.ts`:
 | `components/shared/Chatbot.tsx`        | Floating widget, mounted site-wide in `app/layout.tsx`  |
 | `components/shared/ChatLeadForm.tsx`   | Stepped in-chat contact form                            |
 | `components/shared/ChatMarkdown.tsx`   | Renders the bullet/bold subset safely                   |
+| `lib/seo.ts`                           | Site origin, org NAP, per-page metadata + canonical     |
+| `lib/seo-pages.ts`                     | Long-form copy and FAQs for the service/product pages   |
+| `lib/schema.ts`                        | JSON-LD builders, all keyed off `lib/data.ts`           |
+| `lib/og-card.tsx`                      | The generated per-page share card                       |
+| `components/shared/JsonLd.tsx`         | The one sanctioned `dangerouslySetInnerHTML`            |
+| `components/seo/Breadcrumbs.tsx`       | Visible trail + its `BreadcrumbList` markup, together   |
+| `app/services/[slug]/page.tsx`         | One indexable page per service                          |
+| `app/products/[slug]/page.tsx`         | One indexable page per product                          |
+| `app/llms.txt/route.ts`                | Plain-text site summary for answer engines              |
+
+## Search and indexing
+
+The site is meant to be found, not just to look right, and two structural
+problems stood in the way of that. Both are fixed by the same move.
+
+The first is **content that never reaches a crawler.** The six services on the
+homepage are cards with a click handler; their descriptions, capabilities and
+measures only render once `sel >= 0`, so none of that copy is in the HTML. The
+second is **one page competing for nine queries.** Products *were* rendered
+server-side, but all three sit on the homepage alongside all six services, and a
+page about everything ranks for nothing in particular.
+
+So each offering has its own URL — `/services/<slug>`, `/products/<slug>` —
+with its own `<h1>`, its own title, several hundred words on that one subject,
+and its own FAQ. The copy lives in `lib/seo-pages.ts` rather than `lib/data.ts`,
+because `lib/data.ts` is the chatbot's grounding context and it is deliberately
+terse; several thousand words of prose in it would be paid for on every chat
+turn. The two are joined by `key`, which must match a `k` in `SERVICES` or
+`PRODUCTS`; the join throws at module load if it does not, and
+`tests/seo.test.ts` checks the sets line up both ways.
+
+Rules that are easy to get wrong and so are worth stating:
+
+- **The canonical is never set in `app/layout.tsx`.** A canonical there is
+  inherited by every child that does not override it, so the whole site would
+  declare the homepage as its canonical — the exact failure the tag exists to
+  prevent. Each page sets its own through `pageMetadata()`.
+- **Defining `openGraph` on a page replaces the parent's, images included.**
+  Pages that set a title and description were shipping no `og:image` at all
+  until `pageMetadata()` started naming one explicitly.
+- **Name, address and phone are written once**, in `ORG` in `lib/seo.ts`, and
+  every surface that prints them — footer, contact page, JSON-LD, `llms.txt` —
+  prints those same strings. Divergent NAP is the usual reason a local listing
+  fails to consolidate.
+- **Structured data must describe the page a visitor sees.** The FAQ answers
+  are rendered as plain headings and paragraphs rather than a collapsed
+  disclosure widget, so the `FAQPage` markup is truthful; the breadcrumb trail
+  and its `BreadcrumbList` come from one list for the same reason.
+- **No `offers` node on the products.** The site publishes no pricing, and
+  markup claiming a price it does not show is both a structured-data violation
+  and a commercial claim the assistant is forbidden from making.
+- `lib/seo-pages.ts` copy follows the assistant's rules: no pricing, no delivery
+  timelines, no client names, nothing beyond the Support stage in `STAGES`.
+
+`/llms.txt` states the same facts in prose for answer engines, generated from
+the same arrays — a site whose substance is behind a click handler and a WebGL
+canvas summarises badly otherwise.
+
+Two things cannot be done in code and have to be done once in the relevant
+console: verifying the domain in Google Search Console and Bing Webmaster Tools
+and submitting the sitemap in both, and claiming the Google Business Profile for
+the Bengaluru office.
 
 ## Transport
 
